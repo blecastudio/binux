@@ -33,7 +33,6 @@ Address=10.0.2.15/24
 Gateway=10.0.2.2
 DNS=10.0.2.3
 NETWORK
-printf 'nameserver 10.0.2.3\n' | sudo tee "$guest/etc/resolv.conf" >/dev/null
 sudo chroot "$guest" systemctl enable systemd-networkd.service
 sudo rm -f "$guest/usr/sbin/policy-rc.d"
 sudo chroot "$guest" useradd -m -s /bin/bash binux
@@ -99,6 +98,7 @@ sudo cp -L "$guest"/boot/initrd.img-* "$out/$distro-initrd"
 sudo rm -f "$guest/etc/ssh/ssh_host_"* "$guest/usr/bin/qemu-aarch64-static" "$guest/var/lib/dbus/machine-id"
 sudo truncate -s 0 "$guest/etc/machine-id"
 sudo chroot "$guest" apt-get clean
+printf 'nameserver 10.0.2.3\n' | sudo tee "$guest/etc/resolv.conf" >/dev/null
 sudo umount "$guest/proc"
 truncate -s 10G "$work/disk.raw"
 sudo mkfs.ext4 -q -F -L binux -d "$guest" "$work/disk.raw"
