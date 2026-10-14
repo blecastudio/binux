@@ -6,7 +6,7 @@ BlecaStudio의 CLI 중심 개발 실행환경. 실제 Bash/PTY Android 앱, 실�
 
 **현재 결과는 실험용 최소 버전입니다. 전체 7단계 제품을 완성한 상태가 아닙니다.** Android/Windows 앱은 빌드했고, Linux 호스트에서 프로세스·서버·패키지 보안·WBS 통합을 실행해 검증했습니다. Android 실제 기기와 Windows OS에서 실행한 결과는 아직 없습니다. Android Python/Node.js/PRoot, 앱 간 WBS와 Debian/Ubuntu 실행 엔진은 후속 통합 대상입니다. 별도 X11 앱은 실제 서버 소스로 빌드했으며 기기 실행 검증은 대기입니다. 미지원 명령은 실패 코드를 반환합니다.
 
-[binux APK 및 Desktop:X11 APK](downloads/README.md) · [설치·사용·제한 사항](docs/DESKTOP-X11.md)
+[binux 및 Desktop:X11 APK 다운로드](https://github.com/blecastudio/binux/releases/tag/v0.1.2) · [설치·사용·제한 사항](docs/DESKTOP-X11.md)
 
 ## 산출물
 

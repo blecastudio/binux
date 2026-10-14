@@ -1,6 +1,6 @@
 # binux Desktop와 Binux Desktop:X11
 
-Android CLI는 0.1.2, 별도 ARM64 X11 앱은 0.1.0입니다. Desktop은 기본 설치에 포함되지 않습니다.
+Android CLI는 0.1.2, 별도 ARM64 X11 앱은 0.1.0입니다. [APK 다운로드](https://github.com/blecastudio/binux/releases/tag/v0.1.2). 공개 Release의 두 APK를 다시 내려받아 검증된 로컬 빌드와 동일한 것을 확인했습니다. Desktop은 기본 설치에 포함되지 않습니다.
 
 ## 설치 링크
 
@@ -93,6 +93,6 @@ cd android
 ./gradlew :app:connectedDebugAndroidTest :desktop-x11:connectedDebugAndroidTest
 ```
 
-`X11DeviceTest`는 실제 서버의 X11 handshake와 정상 쿠키 인증, 미인증 클라이언트 차단, 설정 버튼 존재를 검사합니다. 이 작업 환경에는 ARM64 Android 기기가 없어 **컴파일만 했고 실행하지 않았습니다**. 실제 휴대폰 X11 화면 출력, IME·터치·마우스, 화면 꺼짐, 최소화, OS 종료 후 복원은 검증 대기입니다. APK 정적 검사는 ARM64 ABI와 모든 ELF의 16 KiB 페이지 정렬을 확인합니다. Linux XFCE/Xvfb 테스트 결과는 Android 렌더러 실기기 결과와 구분합니다.
+`X11DeviceTest`는 실제 서버의 X11 handshake와 정상 쿠키 인증, 미인증 클라이언트 차단, 설정 버튼 존재를 검사합니다. 이 작업 환경에는 ARM64 Android 기기가 없어 **컴파일만 했고 실행하지 않았습니다**. 실제 휴대폰 X11 화면 출력, IME·터치·마우스, 화면 꺼짐, 최소화, OS 종료 후 복원은 검증 대기입니다. APK 정적 검사는 ARM64 ABI와 모든 ELF의 16 KiB 페이지 정렬을 확인합니다. 별도 Debian 13 amd64 환경에서 실제 apt XFCE 설치, 체크박스 TUI 및 중복 설치, Xvfb의 X11 연결과 Xfwm4 창 관리자 소유권을 확인했습니다. Linux GUI 테스트는 배포판에 UID 1000 사용자를 등록하고 일반 사용자로 실행했습니다. 이 결과는 Android 렌더러 실기기 결과와 구분합니다.
 
 원본 라이선스와 수정 사항은 `third_party/NOTICE.md`, `android/desktop-x11/UPSTREAM-LICENSE`, 각 소스 아카이브에 보관합니다. 서버의 화면과 클라이언트 프로그램은 실제 X11 프로토콜로 통신합니다.

@@ -21,6 +21,10 @@ jobs:
    - uses: actions/setup-java@v4
      with: {distribution: temurin, java-version: '21'}
    - uses: android-actions/setup-android@v3
+     with:
+      packages: platform-tools
+      cmdline-tools-version: '13114758'
+      log-accepted-android-sdk-licenses: false
    - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
    - uses: actions/setup-python@v5
      with: {python-version: '3.12'}
