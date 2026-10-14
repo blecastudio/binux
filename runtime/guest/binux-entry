@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+export HOME=/home/binux BINUX_HOME=/var/lib/binux/state BINUX_RUNTIME=linux-vm
+export PATH=/home/binux/.venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export LANG=C.UTF-8
+export BINUX_LANG=$(cat /run/binux-bootstrap/lang)
+cd "${1:?Working directory required}"
+shift
+exec "$@"

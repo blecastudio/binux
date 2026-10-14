@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+environment="$HOME/.venv"
+[[ -x $environment/bin/python ]] || python3 -m venv "$environment"
+exec "$environment/bin/python" -m pip "$@"

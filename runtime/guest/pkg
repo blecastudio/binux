@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+[[ $# -gt 0 ]] || { printf 'pkg update|upgrade|install|remove|search|show|list [packages]\n';exit 0; }
+action=$1;shift
+packages=()
+for package; do
+ case $package in python) package=python3;;javascript|node) package=nodejs;;esac
+ packages+=("$package")
+done
+case $action in
+ update) exec sudo apt-get -o APT::Update::Error-Mode=any update "$@";;
+ install|remove|upgrade) exec sudo apt-get "$action" "${packages[@]}";;
+ search|show) exec apt-cache "$action" "${packages[@]}";;
+ list) exec apt list "$@";;
+ *) printf 'pkg: unsupported action: %s\n' "$action" >&2;exit 2;;
+esac

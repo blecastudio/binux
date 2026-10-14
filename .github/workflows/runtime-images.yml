@@ -1,0 +1,38 @@
+name: Build Linux VM runtime images
+on:
+ push:
+  branches: ['runtime-1.0']
+  paths: ['runtime/**', 'scripts/build-runtime-image.sh', '.github/workflows/runtime-images.yml']
+ workflow_dispatch:
+permissions:
+ contents: write
+jobs:
+ images:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 100
+  strategy:
+   matrix: {distribution: [debian, ubuntu]}
+  steps:
+   - uses: actions/checkout@v4
+   - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils ubuntu-keyring
+   - run: sudo update-binfmts --enable qemu-aarch64
+   - run: scripts/build-runtime-image.sh '${{ matrix.distribution }}' artifacts/runtime
+   - uses: actions/upload-artifact@v4
+     with: {name: 'runtime-${{ matrix.distribution }}', path: artifacts/runtime, compression-level: 0}
+ publish:
+  needs: images
+  runs-on: ubuntu-24.04
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/download-artifact@v4
+     with: {pattern: 'runtime-*', merge-multiple: true, path: artifacts/runtime}
+   - name: Hash immutable runtime artifacts
+     run: |
+      python3 - <<'PY'
+      import hashlib,json,pathlib,os
+      root=pathlib.Path('artifacts/runtime');tag='runtime-'+os.environ['GITHUB_SHA'][:12]
+      assets={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.file_digest(p.open('rb'),'sha256').hexdigest(),'url':f'https://github.com/blecastudio/binux/releases/download/{tag}/{p.name}'} for p in root.iterdir()}
+      (root/'manifest.json').write_text(json.dumps({'schema':1,'source_commit':os.environ['GITHUB_SHA'],'architecture':'aarch64','disk_bytes':10737418240,'assets':assets},indent=2)+'\n')
+      PY
+   - env: {GH_TOKEN: '${{ github.token }}'}
+     run: gh release create "runtime-${GITHUB_SHA:0:12}" artifacts/runtime/* --prerelease --title 'binux Debian/Ubuntu ARM64 VM data' --notes 'Guest disks, kernels and initrds. These are data for the APK-packaged VM, not Android native executable downloads. Package/source versions are included.' --target "$GITHUB_SHA"

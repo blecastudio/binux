@@ -1,0 +1,15 @@
+export HOME=/home/binux BINUX_HOME=/var/lib/binux/state BINUX_RUNTIME=linux-vm
+export PATH="$HOME/.venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export LANG=C.UTF-8 HISTFILE="$HOME/.bash_history"
+HISTSIZE=5000
+shopt -s histappend checkwinsize
+PS1='user@binux:\w\$ '
+PROMPT_COMMAND='if [[ "$PWD" -ef "$HOME" ]]; then PS1="user@binux:~/\\$ "; else PS1="user@binux:\\w\\$ "; fi;history -a'
+chdir(){ cd "$@"; }
+unmount(){ umount "$@"; }
+shh(){ ssh "$@"; }
+getpid(){ printf '%s\n' "$BASHPID"; }
+getppid(){ printf '%s\n' "$PPID"; }
+ifconfip(){ ip address; }
+fork(){ if (($#)); then "$@" & else printf 'fork <command> [args...]\n' >&2;return 2;fi; }
+printf 'binux Linux VM / %s / %s\n' "$(. /etc/os-release;printf '%s' "$PRETTY_NAME")" "$(uname -r)"

@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+bootstrap=/run/binux-bootstrap
+uid=$(cat "$bootstrap/uid")
+[[ $uid =~ ^[0-9]+$ && $uid -ge 1000 && $uid -le 2147483647 ]]
+groupmod -o -g "$uid" binux
+usermod -o -u "$uid" -g "$uid" binux
+install -d -m 700 -o "$uid" -g "$uid" /var/lib/binux/state /home/binux
+mount -t 9p -o trans=virtio,version=9p2000.L binux-home /home/binux
+mount -t 9p -o trans=virtio,version=9p2000.L binux-state /var/lib/binux/state
+install -d -m 755 /etc/binux/authorized
+install -m 644 "$bootstrap/authorized_keys" /etc/binux/authorized/binux
+ssh-keygen -A
+# Only PUBLIC host keys reach the Android serial log. Private keys stay in the disk.
+printf 'BINUX_SSH_HOSTKEY '
+cat /etc/ssh/ssh_host_ed25519_key.pub
