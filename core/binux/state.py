@@ -33,7 +33,11 @@ def write(path: Path, value):
             os.unlink(name)
 
 def config():
-    return read(base() / "config/settings.json", {"lang": "ko", "background": True, "autostart": False})
+    defaults = {"lang": os.environ.get("BINUX_LANG","ko"), "background": True, "autostart": False}
+    if os.environ.get("BINUX_RUNTIME") == "linux-vm" or os.environ.get("BINUX_DEVICE_TARGET") == "windows":
+        from .trust import ADDON_ED25519_KEY
+        defaults.update(official_repo="blecastudio/binux", official_release="v1.0.0", addon_ed25519_key=ADDON_ED25519_KEY)
+    return {**defaults, **read(base() / "config/settings.json", {})}
 
 def set_config(key, value):
     values = config()

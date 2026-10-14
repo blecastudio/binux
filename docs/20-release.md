@@ -1,23 +1,27 @@
 # 20. GitHub / Release 배포
 
-검증된 실제 원격: https://github.com/blecastudio/binux.git (public, 기본 branch main, 작업 시작 시 commits 없음). 이 작업에서는 push/Release 게시를 실행하지 않았습니다. 로컬 artifacts는 debug/experimental 검증용입니다.
+공식 저장소는 https://github.com/blecastudio/binux 입니다. 설치 스크립트는 실제 main의
+setup-binux-desktop이며 APK의 installer-manifest.json에 검토한 SHA-256을 넣습니다.
+검토 후 스크립트가 바뀌면 APK도 새 해시로 빌드해야 합니다.
 
-게시 준비 순서:
+1. NDK Bash/VM 및 X11 소스 준비, 단위/통합/린트, Windows publish를 완료합니다.
+2. Linux 이미지 workflow로 Debian/Ubuntu를 서명된 저장소에서 만들고 실제 커널 부팅,
+   SSH/UID/공유 홈/pkg/pip/npm을 검사합니다. 부팅 실패 이미지는 발행하지 않습니다.
+3. 대응 소스·패키지 버전·커널·initrd·qcow2를 immutable runtime-SHA Release에 올립니다.
+4. 발행된 manifest.json을 검증해 Android assets/runtime-manifest.json에 고정합니다.
+   runtime SHA와 asset 크기/해시/공식 Release URL을 확인한 뒤 APK를 다시 빌드합니다.
+   `python3 scripts/pin-runtime.py <발행된 runtime-SHA Release의 manifest.json URL>`을
+   사용하세요. 검증 이미지가 없으면 Gradle이 배포판 설치가 불가능한 APK 빌드를 거부합니다.
+5. scripts/build-addons.py에 외부 보관한 Ed25519 개인 키를 주어 data/source add-on을
+   서명합니다. 개인 키는 git/Release/로그에 올리지 않습니다. 공개 키만 core/binux/trust.py에
+   포함합니다. 일반 패키지 apt/pip/npm은 별도 신뢰 체계입니다.
+6. APK 두 개, 전체 Windows publish ZIP, 서명 add-on 및 SHA256SUMS를 downloads에
+   준비합니다. v1.0.0 태그 workflow가 검증 후 개발 프리뷰 Release를 만듭니다.
 
-1. STATUS.md의 미완성/기기 미검증 표시를 유지한 채 소스와 라이선스를 검토합니다.
-2. Android ARM64/Windows 실제 테스트와 요구사항 검증표를 업데이트합니다.
-3. 개인키/인증서/로컬 데이터가 git diff에 없는지 확인합니다. artifacts 및 user data는 커밋하지 않습니다.
-4. 빈 원격의 initial commit과 main branch를 소유자가 게시합니다. 이미 원격에 커밋이 생겼다면 먼저 fetch하고 합칩니다.
-5. build.yml은 artifact만 생성합니다. workflow가 release를 자동 게시하지 않습니다.
-6. Android release APK를 자신의 keystore로 서명하고 Windows publish 폴더 전체를 ZIP으로 만듭니다. 필요 시 Authenticode 서명을 별도로 적용합니다.
-7. APK/ZIP/source archive/NOTICE/LICENSE/SHA256SUMS와 실제 호환성 기록을 0.1.0 experimental Release에 첨부합니다.
+기존 APK와 같은 서명을 유지해야 데이터 보존 업데이트가 됩니다. 현재 개발 서명을
+production 보안 서명으로 소개하지 않습니다. Android/Windows 실기기 및 배터리/OEM
+검증이 끝나기 전에는 stable 기능 검증 완료라고 표시하지 않습니다.
 
-공식 보조 패키지 배포:
-
-- 일반 apt/pip/npm과 분리된 Release asset을 생성합니다.
-- 각 archive의 SHA-256과 실제 GitHub API browser_download_url을 사용해 binux-addons.json을 생성합니다. 아직 존재하지 않는 URL을 적지 않습니다.
-- 매니페스트 package 필드는 name/version/url/sha256/platform/arch/dependencies와 선택 signature입니다. Ed25519 서명은 14-addons.md의 canonical JSON을 따릅니다. 개인키는 CI secret 또는 별도 서명 장치에 두고 로그에 출력하지 않습니다.
-- 공개키는 독립된 신뢰 경로로 공지합니다. 같은 공격자가 교체할 수 있는 archive와 checksum만을 완전한 출처 인증이라고 부르지 않습니다.
-- scripts/install-addon.sh를 실제 asset으로 게시하고 URL 접근/내용/해시를 확인한 뒤에만 공식 `bash <(curl -Lf 실제_URL)` 설치 명령을 안내합니다.
-
-현재 공식 다운로드 URL과 installer URL은 **미발행**입니다. 실제 저장소가 존재하는 것과 공식 패키지/스크립트가 이미 배포된 것은 구분합니다. GPL 대응 소스 전체(수정한 Termux, Bash/xterm source archives, 빌드 스크립트)를 바이너리와 함께 배포합니다.
+모든 바이너리에 LICENSE/third_party/NOTICE 및 대응 소스를 함께 제공합니다.
+런타임 이미지의 Debian/Ubuntu 대응 소스는 해당 runtime Release의 별도 tar 자산입니다.
+QEMU/GLib/Bash/X.Org/SSH 전체 소스와 수정 패치는 프로젝트 소스 아카이브에 있습니다.

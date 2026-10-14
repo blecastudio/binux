@@ -18,6 +18,9 @@ class BinuxRuntimeService: Service() {
  lateinit var jobs: BackgroundProcessManager; private set
  lateinit var servers: ServerManager; private set
  lateinit var database: BinuxDatabase; private set
+ lateinit var virtualMachines: VmManager; private set
+ lateinit var desktopAudio: DesktopAudio; private set
+ private var guestBridge: GuestBridge?=null
  private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
  private val handler=Handler(Looper.getMainLooper())
  private var control: LocalServerSocket?=null
@@ -29,9 +32,12 @@ class BinuxRuntimeService: Service() {
   settings=Settings(this); runtime=NativeRuntime(this,settings,StorageManager(this)); database=BinuxDatabase.open(this)
   jobs=BackgroundProcessManager(runtime,database,::notifyTasks); servers=ServerManager(runtime,jobs)
   sessions=SessionManager(runtime,database,::notifyTasks)
+  virtualMachines=VmManager(runtime) { handler.post(::notifyTasks) }
+  desktopAudio=DesktopAudio(this,virtualMachines) { if(Looper.myLooper()==Looper.getMainLooper())notifyTasks() else handler.post(::notifyTasks) }
+  guestBridge=GuestBridge(runtime,virtualMachines,scope).also { it.start() }
   val manager=getSystemService(NotificationManager::class.java)
   manager.createNotificationChannel(NotificationChannel("runtime",settings.localized().getString(R.string.channel),NotificationManager.IMPORTANCE_LOW))
-  if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) else startForeground(1,notification())
+  if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),foregroundTypes()) else startForeground(1,notification())
   control=LocalServerSocket(runtime.control)
   val router=CommandRouter(this)
   scope.launch {
@@ -51,7 +57,8 @@ class BinuxRuntimeService: Service() {
        val args=List(array.length()) { array.getString(it) }
        var response=CommandRouter.Result(1,"Runtime unavailable")
        val done=CountDownLatch(1)
-       if(args.firstOrNull()=="script-download")response=ScriptDownload.fetch(args.drop(1))
+       if(args.firstOrNull()=="script-download")response=ScriptDownload.fetch(args.drop(1),assets.open("installer-manifest.json").use { org.json.JSONObject(it.bufferedReader().readText()) })
+       else if(args.take(2)==listOf("desktop","prepare"))response=runCatching { CommandRouter.Result(0,DesktopManager(this@BinuxRuntimeService).execute(listOf("prepare"))) }.getOrElse { CommandRouter.Result(1,"${it.message}") }
        else { handler.post { try { response=router.execute(args) } finally { done.countDown() } };done.await() }
        peer.outputStream.bufferedWriter(Charsets.UTF_8).use { it.write("${response.code}\n${response.text}\n") }
       } catch(e: Exception) { runCatching { peer.outputStream.write("1\nInvalid control request\n".toByteArray()) } }
@@ -63,8 +70,8 @@ class BinuxRuntimeService: Service() {
  }
  override fun onStartCommand(intent: Intent?, flags: Int,startId: Int): Int {
   when(intent?.action) {
+   "autostart" -> { uiVisible=false;if(settings.flag("autostart") && settings.flag("background"))jobs.startSaved();notifyTasks() }
    "stop" -> { stopTasks(); handler.postDelayed({ if(!uiBound && idle())stopSelf() },2500) }
-   "pause" -> jobs.pauseAll()
   }
   return START_NOT_STICKY
  }
@@ -75,15 +82,18 @@ class BinuxRuntimeService: Service() {
   uiVisible=visible
   if(visible) {
    startService(Intent(this,BinuxRuntimeService::class.java))
-   if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) else startForeground(1,notification())
+   if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),foregroundTypes()) else startForeground(1,notification())
   } else notifyTasks()
  }
- private fun idle()=::sessions.isInitialized && sessions.sessions.none { it.isRunning } && jobs.jobs.none { it.process.isAlive }
- fun stopTasks() { sessions.stopAll(); jobs.stopAll() }
+ private fun idle()=::sessions.isInitialized && sessions.sessions.none { it.isRunning } && jobs.jobs.none { it.process.isAlive } && (!::virtualMachines.isInitialized || (virtualMachines.active==0 && virtualMachines.downloads==0))
+ fun stopTasks() { sessions.stopAll(); jobs.stopAll();if(::desktopAudio.isInitialized)desktopAudio.stop();if(::virtualMachines.isInitialized)virtualMachines.stopAll() }
  fun notifyTasks() {
+  if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),foregroundTypes())
   if(::sessions.isInitialized) getSystemService(NotificationManager::class.java).notify(1,notification())
   if(!uiVisible && idle())handler.postDelayed({if(!uiVisible && idle()){stopForeground(STOP_FOREGROUND_REMOVE);stopSelf()}},2500)
  }
+ @androidx.annotation.RequiresApi(34)
+ private fun foregroundTypes()=ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or (if(::desktopAudio.isInitialized && desktopAudio.active)ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0)
  private fun notification(): Notification {
   val c=settings.localized()
   val open=PendingIntent.getActivity(this,0,Intent(this,MainActivity::class.java),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -92,14 +102,13 @@ class BinuxRuntimeService: Service() {
   val jobCount=if(::jobs.isInitialized)jobs.jobs.count { it.process.isAlive && it.server==null } else 0
   val serverCount=if(::jobs.isInitialized)jobs.jobs.count { it.process.isAlive && it.server!=null } else 0
   return Notification.Builder(this,"runtime").setSmallIcon(android.R.drawable.ic_menu_manage).setContentTitle("binux ${BuildConfig.VERSION_NAME}")
-   .setContentText(c.getString(R.string.notification,sessionCount,jobCount,serverCount)).setContentIntent(open).setOngoing(true)
+   .setContentText(c.getString(R.string.notification,sessionCount,jobCount,serverCount)+" / VM: ${if(::virtualMachines.isInitialized)virtualMachines.active else 0} / downloads: ${if(::virtualMachines.isInitialized)virtualMachines.downloads else 0}").setContentIntent(open).setOngoing(true)
    .addAction(Notification.Action.Builder(null,c.getString(R.string.open),open).build())
-   .addAction(Notification.Action.Builder(null,c.getString(R.string.pause),action("pause",1)).build())
    .addAction(Notification.Action.Builder(null,c.getString(R.string.stop_all),action("stop",2)).build()).build()
  }
  override fun onTaskRemoved(rootIntent: Intent?) { if(!settings.flag("background")) { stopTasks(); handler.postDelayed({stopSelf()},2500) } }
  override fun onDestroy() {
-  stopTasks(); handler.removeCallbacks(checkpoint); runCatching { control?.close() }; scope.cancel()
+  stopTasks(); handler.removeCallbacks(checkpoint); runCatching { control?.close() };guestBridge?.close(); scope.cancel()
   super.onDestroy()
  }
 }

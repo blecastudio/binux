@@ -53,7 +53,11 @@ def parser():
         if name == "remove":
             item.add_argument("--yes", action="store_true")
     desktop = s.add_parser("desktop"); desktop.add_argument("--runtime", choices=("debian", "ubuntu"), default=(next((line[3:].strip('"') for line in Path("/etc/os-release").read_text().splitlines() if line.startswith("ID=")), "debian") if os.environ.get("BINUX_RUNTIME")=="linux-vm" else "debian")); ds = desktop.add_subparsers(dest="action", required=True)
-    for name in ("install", "start", "stop", "status", "update"):
+    install = ds.add_parser("install")
+    install.add_argument("--yes", action="store_true")
+    install.add_argument("--features")
+    install.add_argument("--renderer", choices=("x11", "vnc"))
+    for name in ("start", "stop", "status", "update"):
         ds.add_parser(name)
     ds.add_parser("uninstall").add_argument("--yes", action="store_true")
     storage = s.add_parser("storage").add_subparsers(dest="action", required=True)
@@ -222,9 +226,20 @@ def main(argv=None):
                     raise ValueError("Write the backup outside binux data to avoid recursion")
                 if archive.exists():
                     raise ValueError("Backup destination exists; refusing overwrite")
-                with tarfile.open(archive, "x:gz") as tar:
-                    for name in ("home", "projects", "repos"):
-                        tar.add(base() / name, arcname=name, filter=lambda info: info if info.isdir() or info.isfile() else None)
+                import tempfile
+                sources={name:base()/name for name in ("home","projects","repos")}
+                if os.environ.get("BINUX_RUNTIME")=="linux-vm":
+                    sources["home"]=Path.home()
+                with tempfile.TemporaryDirectory(dir=base()/"cache") as temporary:
+                    snapshot=Path(temporary)/"backup.tar.gz"
+                    with tarfile.open(snapshot,"x:gz") as tar:
+                        for name,source in sources.items():
+                            tar.add(source,arcname=name,filter=lambda info:info if info.isdir() or info.isfile() else None)
+                    # Copy after collecting HOME, so a destination in ~/ cannot recurse.
+                    with archive.open("xb") as destination,snapshot.open("rb") as source:
+                        shutil.copyfileobj(source,destination)
+                        destination.flush();os.fsync(destination.fileno())
+                    archive.chmod(0o600)
                 result = str(archive)
             else:
                 from .packages import safe_extract
@@ -233,7 +248,7 @@ def main(argv=None):
                     target = Path(temporary)
                     safe_extract(args.archive, target)
                     stamp = __import__("datetime").datetime.now().strftime("%Y%m%d-%H%M%S")
-                    destination = base() / "projects" / ("restored-" + stamp)
+                    destination = (Path.home() if os.environ.get("BINUX_RUNTIME")=="linux-vm" else base()/"projects") / ("restored-" + stamp)
                     if destination.exists():
                         raise ValueError("Restore target exists")
                     target.rename(destination)

@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # binux Desktop와 Binux Desktop:X11
 
 Android CLI는 0.1.2, 별도 ARM64 X11 앱은 0.1.0입니다. [APK 다운로드](https://github.com/blecastudio/binux/releases/tag/v0.1.2). 공개 Release의 두 APK를 다시 내려받아 검증된 로컬 빌드와 동일한 것을 확인했습니다. Desktop은 기본 설치에 포함되지 않습니다.

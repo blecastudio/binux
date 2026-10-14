@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+source /etc/os-release
+[[ $ID == debian || $ID == ubuntu ]] || { printf 'Debian/Ubuntu required\n' >&2;exit 69; }
+printf 'Install Python, Node.js, Git and SSH using signed distribution packages? [yes]: '
+read -r response
+[[ $response == yes ]] || exit 1
+sudo apt-get -o APT::Update::Error-Mode=any update
+exec sudo apt-get install python3 python3-venv python3-pip nodejs npm git openssh-client curl

@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 5. Kotlin 터미널 UI
 
 `MainActivity.kt`가 Compose 레이아웃 안에 실제 `TerminalView`를 연결합니다. ANSI/UTF-8, 커서 이동, 선택 복사, 붙여넣기, IME, 외부 키보드 입력은 vendored 터미널 라이브러리에서 처리합니다. Tab 및 방향키는 PTY에 바이트를 전송하므로 Bash의 실제 자동완성과 기록을 사용합니다.

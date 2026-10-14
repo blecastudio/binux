@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 6. PTY와 실제 셸
 
 `TerminalSession.java` → `JNI.java` → `termux.c`에서 `/dev/ptmx`, grantpt/unlockpt, fork, setsid, slave TTY, dup2, execvp, waitpid를 사용합니다. 앱 출력이 아니라 자식 Bash의 stdout/stderr를 읽습니다. 터미널 크기 변경은 ioctl(TIOCSWINSZ)로 전달합니다.

@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 13. WBS 프로토콜과 연결
 
 구현 파일: core/binux/wbs.py. **현재 Linux/WSL 호스트 프로토타입이며 Android 앱/Windows 앱 transport는 통합되지 않았습니다.** `windows`와 `android`는 연결 대상 표시이고, 상대 OS 지원을 입증하는 이름이 아닙니다.
@@ -27,3 +29,12 @@ JSON line 프레임은 최대 24 MiB, 파일 최대 16 MiB입니다. info/get/pu
 pair --commands에는 허용된 정확한 argv 배열 목록을 담은 JSON 파일을 지정할 수 있습니다. exec는 목록에 정확히 일치할 때만 shell 없이 15초 한도로 실행합니다. 임의 root/관리 명령 권한을 제공하지 않습니다. 로그는 시각, 지문 일부, operation만 기록합니다. revoke는 새 요청부터 차단하며 disconnect는 선택한 endpoint를 지웁니다. 지속 연결이 없으므로 status는 지금의 연결 가능 여부를 새로 검사합니다.
 
 포트 포워딩, 화면 공유, 데스크톱 원격 조작은 미구현이며 미지원 상태를 반환합니다. Windows 네이티브 프로그램을 Android에서 실행하는 기능도 없습니다. TLS 해제, --insecure, 공유 전체 홈 디렉터리 같은 기본 설정을 넣지 않았습니다.
+
+## 1.0 WBS 포트 연결
+
+Android에서는 Linux VM, Windows에서는 WSL의 실제 TLS/mTLS 구현을 사용합니다.
+연결하는 기기에 포트 접근을 허용하려면 페어링 시 `--allow-port 8000`을 명시합니다.
+이후 `wbs forward 9000 8000`은 127.0.0.1:9000을 승인된 상대 localhost:8000에 연결합니다.
+미승인 포트는 거부하며 신뢰/포트 권한이 폐기되면 활성 relay도 끝납니다. Android VM의
+forward listener를 Android localhost에 연결하려면 `binux runtime forward debian 9000`을
+사용합니다. 물리 LAN 공개는 별도 --allow-network가 필요합니다.

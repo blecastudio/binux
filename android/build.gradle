@@ -5,3 +5,17 @@ plugins {
  id 'org.jetbrains.kotlin.plugin.compose' version '2.1.20' apply false
  id 'com.google.devtools.ksp' version '2.1.20-1.0.32' apply false
 }
+subprojects {
+ plugins.withId('com.android.application') {
+  def legal=tasks.register('prepareLegalAssets',Copy) {
+   from rootProject.file('../LICENSE')
+   from rootProject.file('../third_party/NOTICE.md')
+   from rootProject.file('../third_party/TERMUX-LICENSE.md')
+   from rootProject.file('../third_party/legal')
+   from rootProject.file('desktop-x11/UPSTREAM-LICENSE')
+   into layout.buildDirectory.dir('generated/binux-legal/licenses')
+  }
+  android.sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/binux-legal')
+  tasks.named('preBuild').configure { dependsOn legal }
+ }
+}

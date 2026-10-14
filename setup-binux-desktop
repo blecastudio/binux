@@ -10,7 +10,7 @@ fail() { say "$1" "$2" >&2; exit "${3:-1}"; }
 yes=false; features='files'; renderer=x11; action=install
 while (($#)); do
  case $1 in
-  --help|-h) printf 'setup-binux-desktop [--yes] [--features files,editor,audio,tools,chromium] [--renderer x11|vnc] [--check]\n'; exit 0;;
+  --help|-h) printf 'setup-binux-desktop [--yes] [--features files,editor,audio,tools,chromium,wbs] [--renderer x11|vnc] [--check]\n'; exit 0;;
   --yes) yes=true;;
   --features) (($#>=2)) || exit 2; features=$2; shift;;
   --renderer) (($#>=2)) || exit 2; renderer=$2; shift;;
@@ -49,20 +49,20 @@ if ! $yes; then
  elif { exec 5</dev/tty; } 2>/dev/null; then :
  else fail '--yes 없이 실행하려면 대화형 터미널이 필요합니다.' 'An interactive terminal is required without --yes.' 2
  fi
- selected=(true false false false false)
- labels=('GUI 파일 관리자 / File manager' 'GUI 코드 편집기 / Code editor' '오디오 / Audio' '개발 도구 / Developer tools' 'Chromium (Chrome ARM64 미지원 / sandbox preserved)')
+ selected=(true false false false false false)
+ labels=('GUI 파일 관리자 / File manager' 'GUI 코드 편집기 / Code editor' '오디오 / Audio' '개발 도구 / Developer tools' 'Chromium (Chrome ARM64 미지원 / sandbox preserved)' 'WBS CLI 실행기 / WBS launcher')
  while :; do
   say '번호를 입력해 선택을 전환하세요. Enter: 진행' 'Toggle options using their numbers. Enter: continue'
-  for i in 0 1 2 3 4; do mark=' '; ${selected[$i]} && mark=x; printf '%s. [%s] %s\n' "$((i+1))" "$mark" "${labels[$i]}"; done
+  for i in 0 1 2 3 4 5; do mark=' '; ${selected[$i]} && mark=x; printf '%s. [%s] %s\n' "$((i+1))" "$mark" "${labels[$i]}"; done
   IFS= read -r answer <&5 || exit 1
   [[ -z $answer ]] && break
   for n in $answer; do
-   [[ $n =~ ^[1-5]$ ]] || continue
+   [[ $n =~ ^[1-6]$ ]] || continue
    i=$((n-1)); if ${selected[$i]}; then selected[$i]=false;else selected[$i]=true;fi
   done
  done
- features='';keys=(files editor audio tools chromium)
- for i in 0 1 2 3 4; do if ${selected[$i]}; then features+="${keys[$i]},"; fi; done
+ features='';keys=(files editor audio tools chromium wbs)
+ for i in 0 1 2 3 4 5; do if ${selected[$i]}; then features+="${keys[$i]},"; fi; done
  say 'Google Chrome는 호환성 및 샌드박스 검증이 된 환경에서만 설치할 수 있습니다. 기본 브라우저 설치는 보류합니다.' 'Google Chrome needs compatible architecture and a verified sandbox. Chrome installation is deferred.'
  say '선택한 XFCE 패키지를 설치할까요? yes를 입력하세요.' 'Install the selected XFCE packages? Type yes.'
  IFS= read -r answer <&5; [[ $answer == yes ]] || fail '설치 취소됨.' 'Installation cancelled.'
@@ -71,12 +71,12 @@ packages=(xfce4 dbus-x11 xauth x11-utils x11-xserver-utils python3)
 IFS=, read -r -a requested <<< "$features"
 for feature in "${requested[@]}"; do
  case $feature in
-  files) packages+=(thunar);; editor) packages+=(mousepad);; audio) packages+=(pulseaudio);;
+  files) packages+=(thunar);; editor) packages+=(mousepad);; audio) packages+=(pulseaudio pulseaudio-utils);;
   tools) packages+=(git python3 python3-pip nodejs npm curl openssh-client);;
   chromium) [[ $ID == debian ]] || fail 'Ubuntu의 Chromium 패키지는 snap에 연결되어 있습니다. 이 설치기는 snap 구성을 지원하지 않습니다.' 'Ubuntu Chromium delegates to snap, which is not configured by this installer.' 69; packages+=(chromium);;
   ''|none) :;;
   chrome) fail 'Chrome 자동 설치는 아직 샌드박스 검증이 되지 않아 지원하지 않습니다. Chromium을 선택하세요.' 'Automatic Chrome installation is unavailable until sandbox validation; select Chromium.' 69;;
-  wbs) fail 'WBS Desktop Integration은 아직 구현되지 않았습니다.' 'WBS Desktop Integration is not implemented.' 69;;
+  wbs) [[ ${BINUX_RUNTIME:-} == linux-vm ]] || fail 'WBS 통합에는 binux Linux VM이 필요합니다.' 'WBS integration requires the binux Linux VM.' 69; packages+=(xfce4-terminal);;
   *) fail "알 수 없는 보조 기능: $feature" "Unknown feature: $feature" 2;;
  esac
 done
@@ -106,6 +106,13 @@ import json,sys,os,tempfile
 path,distro,renderer,features,count,*packages=sys.argv[1:]
 n=int(count);owned=packages[:n];all_packages=packages[n+1:]
 data={'installed':True,'runtime':distro,'renderer':renderer,'features':features.split(','),'owned_packages':owned,'packages':all_packages,'verified_gui_launch':False}
+if os.path.exists(path):
+ with open(path) as previous_file:previous=json.load(previous_file)
+ # Re-running the official URL must retain ownership from earlier installs,
+ # including optional packages that are still present on this device.
+ if previous.get('installed'):
+  for field in ('features','owned_packages','packages'):
+   data[field]=sorted(set(previous.get(field,[]))|set(data[field]))
 fd,tmp=tempfile.mkstemp(dir=os.path.dirname(path))
 with os.fdopen(fd,'w') as f:json.dump(data,f);f.flush();os.fsync(f.fileno())
 os.replace(tmp,path)
@@ -119,6 +126,18 @@ unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS
 exec dbus-run-session -- xfce4-session
 START
 chmod 700 "$state_dir/start-x11"
+if [[ ,$features, == *,wbs,* ]];then
+ mkdir -p "$HOME/Desktop"
+ cat > "$HOME/Desktop/binux-wbs.desktop" <<'WBS'
+[Desktop Entry]
+Type=Application
+Name=Windows Binux Share
+Exec=xfce4-terminal --hold -e "wbs help"
+Icon=network-workgroup
+Terminal=false
+WBS
+ chmod 700 "$HOME/Desktop/binux-wbs.desktop"
+fi
 say 'XFCE 패키지 설치가 완료되었습니다. GUI 실행은 별도 단계입니다.' 'XFCE packages installed. Starting the GUI is a separate step.'
 printf 'X11: DISPLAY=:1 %q\n' "$state_dir/start-x11"
 if [[ $renderer == vnc ]]; then

@@ -1,18 +1,30 @@
-# 15. binux Desktop 설치기
-
-Desktop은 초기 APK/Windows 실행 파일에 설치하거나 실행하지 않습니다. 호스트 PRoot 배포판에 대해서만 선택형 XFCE/TigerVNC 설치기를 구현했습니다.
+# 15. 선택형 Desktop 설치와 X11
 
 ```bash
-binux desktop --runtime debian install
-binux desktop --runtime debian start
-binux desktop status
+binux desktop source
+binux desktop install
+bash <(curl -Lf https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop)
+binux desktop start
 binux desktop stop
+binux desktop status
 binux desktop update
 binux desktop uninstall
 ```
 
-번호로 [x]/[ ] 체크박스를 전환하는 CLI TUI가 Chrome, 파일 관리자, Mousepad 코드 편집기, WBS integration, PulseAudio, 개발 도구를 선택합니다. 미지원 WBS Desktop integration을 선택하면 설치 전에 실패합니다. apt 설치/업데이트가 실패하면 성공을 저장하지 않습니다. 이미 존재한 패키지는 Desktop 소유로 기록하지 않으며 uninstall은 새로 설치한 명시적 패키지만 제거하고 home을 유지합니다. 설치기 소스는 완성되었으나 이 세션에서는 GUI 패키지 설치 및 화면 실행을 검증하지 않았습니다.
+공식 URL은 BlecaStudio의 실제 저장소입니다. Android 다운로드 어댑터는 APK에서
+검토한 SHA-256과 다르면 실행 전에 실패합니다. source 명령으로 출처·해시를 확인합니다.
+CLI 체크박스는 실제 XFCE apt 패키지와 파일 관리자/편집기/오디오/개발 도구/Chromium/
+WBS CLI 실행기를 선택합니다. 패키지 확인 후 설치 기록을 쓰고 이미 있던 패키지는
+제거 소유 목록에서 제외합니다. 사용자의 프로젝트 파일을 지우는 제거 훅은 없습니다.
 
-VNC는 localhost, VncAuth, 사용자가 입력한 정확히 8 ASCII 글자 비밀번호를 요구합니다. -SecurityTypes None/0.0.0.0 VNC를 기본값으로 쓰지 않습니다. 원격 연결은 별도의 검증된 TLS/SSH 터널을 사용해야 합니다. 비밀번호 및 개인키를 로그에 출력하지 않습니다.
+Desktop:X11 APK의 실제 X.Org 서버는 loopback에서 Xauthority 인증을 사용합니다.
+같은 서명의 앱만 read-only Provider로 쿠키를 받을 수 있습니다. 인증 정보는 공유 홈 밖의
+VM bootstrap에 두고 GUI 앱은 DISPLAY=10.0.2.2:1로 접속합니다. 설정 충돌을 일으킨
+보호 메서드 reflection은 제거했으며 API34/35 회귀 테스트를 추가했습니다.
 
-Google Chrome을 기본 선택으로 표시하되 ARM64 또는 PRoot sandbox 호환성을 확보할 수 없으면 설치하지 않습니다. Chromium(샌드박스 유지) 또는 브라우저 제외를 사용자가 선택할 수 있고, 선택하지 않으면 중단합니다. Chromium도 PRoot에서 실행될 것을 보장하지 않습니다. Chrome이 실제 호환된다고 검증된 native/WSL 설치 어댑터는 아직 없으므로 자동 Chrome 설치를 제공하지 않습니다. Android Chrome handoff, Android VNC/X11 renderer, touch/virtual mouse/zoom/audio device routing은 후속 통합 대상입니다. PulseAudio 패키지 설치는 오디오가 Android에서 들린다는 뜻이 아닙니다.
+툴바/보조 키/전체화면은 앱마다 저장합니다. 툴바를 숨겨도 설정 복구 버튼을 제공합니다.
+ARM64 Linux Chrome은 공식 호환 패키지가 없어 설치하지 않고 Debian Chromium 또는
+Android Chrome 실행을 선택하게 합니다. --no-sandbox를 사용하지 않습니다.
+오디오는 선택 설치 후 `binux desktop audio start|stop|status`로 제어합니다.
+PulseAudio PCM → 인증된 SSH → Android AudioTrack 경로를 사용합니다.
+X11 표시/터치/오디오·절전 성능은 Android 실기기 검증 전입니다.

@@ -1,31 +1,39 @@
-# 17. 테스트 및 검증
-
-Android 0.1.1에는 `:app:testDebugUnitTest`로 실행하는 입력 포커스/UTF-8 큐 전달 회귀 테스트 6개(API34/35 Robolectric)가 추가되었습니다. 실제 키보드 표시와 PTY 명령 실행을 검사하는 `TerminalInputDeviceTest` 3개는 ARM64 기기가 필요하며 컴파일만 했습니다. [검증 상세](ANDROID-0.1.1-INPUT-FIX.md).
-
-**실행 결과: host 통합 33개 통과, emulator JUnit 138개 통과(실패/건너뜀 0), Android APK/test APK/린트 빌드 통과(린트 오류 0, 경고 8), APK 모든 native 파일 16 KiB 정렬 및 debug 서명 검사 통과, Windows win-x64 publish 통과, Python wheel 빌드·설치·CLI smoke 통과.** Debian RootFS에서 실제 Bash/한국어/apt-get --version을 PRoot 어댑터로 실행했습니다. 이는 Android PRoot 또는 apt 다운로드 설치 테스트는 아닙니다.
-
-실행 로그는 로컬 artifacts/host-tests.log, android-build.log, windows-publish.log 및 Bash 빌드 로그에 있습니다. 검증표는 STATUS.md에 있습니다. 테스트를 컴파일한 것과 테스트를 실제 실행한 것을 구분합니다.
+# 17. 테스트 및 증거
 
 ```bash
 cmake -S native -B native/build/host
 cmake --build native/build/host
 bash scripts/test-host.sh
 cd android
-./gradlew :terminal-emulator:testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
-python ../scripts/verify-apk.py app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug assembleDebugAndroidTest lintDebug :app:testDebugUnitTest :desktop-x11:testDebugUnitTest :terminal-emulator:testDebugUnitTest
 ```
 
-호스트 통합 테스트는 실제 Bash PTY, 한국어, 파일 명령, exit status, Python HTTP/Node HTTP, CLI 종료 후 server 유지, stop/pause/resume, 자식 종료, 부족한 저장공간, opt-in restart 한도, SHA/hash/서명 실패, 압축 traversal/symlink, TLS 성공/실패, 폴더/명령 승인, 실제 파일 전송을 검사합니다. 네트워크는 loopback이며 외부 기기 연결 검증은 아닙니다.
+호스트 테스트는 실제 Bash/PTY, Python/Node HTTP 서버, 종료/재시작/자식 프로세스,
+네이티브 소켓 프레임/UTF-8/exit status, 게스트 작업 취소/controlling PTY, 실제 백업 복원,
+WBS TLS 인증·파일·해시·폐기·포트 연결, add-on 해시/서명/안전한 추출을 검사합니다.
 
-ARM64 기기 연결 후만 다음을 실행하세요:
+Android 입력은 API34/35에서 실제 Java IME → 세션 큐 경계를 테스트합니다. JNI fork는
+Robolectric이 실행하지 않습니다. X11 설정은 기존 보호 메서드 reflection 충돌을 먼저
+재현했으며 수정 후 API34/35의 모든 설정 카테고리가 열립니다.
 
 ```bash
-cd android
-./gradlew connectedDebugAndroidTest
+python3 scripts/verify-apk.py android/app/build/outputs/apk/debug/app-debug.apk
+python3 scripts/verify-apk.py --kind x11 android/desktop-x11/build/outputs/apk/debug/desktop-x11-debug.apk
+python3 scripts/test-runtime-image.py debian RUNTIME_OUTPUT
+python3 scripts/test-runtime-image.py ubuntu RUNTIME_OUTPUT
 ```
 
-RuntimeDeviceTest는 APK Bash 실제 실행, 실제 PTY, 한글/파일 명령, real PID handshake를 검사합니다. **이 작업에는 연결된 Android 기기가 없어 실행하지 않았습니다.** Windows ConPTY GUI도 Windows OS가 없어 교차 빌드만 했습니다.
+ELF 검사는 ABI/Android 링커/의존 라이브러리/16 KiB 정렬을 검사합니다. 이미지 검사는
+실제 ARM64 커널을 부팅해 host key 고정 SSH·다른 키 거부·공유 홈·apt/pkg/pip/npm을
+검사합니다. 실패한 이미지는 설치 가능한 Release로 발행하지 않습니다. 부팅 로그와
+이미지 캐시는 CI에 보존해 실패 원인을 다시 검사할 수 있습니다.
 
-수동 백그라운드 검증: bg enable 및 사용자 알림/배터리 설정 후 `binux bg run sh -c 'while :; do date; sleep 2; done'`를 실행합니다. 앱을 최소화하고 화면을 끈 뒤 1/10/30분 이후 로그 시간과 실제 PID를 확인합니다. 알림 stop-all과 bg stop으로 작업이 끝나는지 확인합니다. 앱 강제 중지 후 열었을 때 이전 작업을 interrupted로 표시하고 사용자 요청 시 새 프로세스를 시작하는지 확인합니다. Doze 및 제조사 배터리 제한 상태도 각각 기록하세요.
+현재 호스트 43개, 앱 7개, X11 설정 2개, 에뮬레이터 138개 테스트가 통과합니다.
+PTY 회귀 테스트는 Bash의 SIGTTIN 정지를 실제로 유도한 뒤 전경 소유권 이전과
+SIGCONT로 입력·명령 실행·exit status가 복구되는지 검사합니다.
 
-Android Python/Node가 APK에 없으므로 Android Python HTTP 지속 검증은 아직 수행할 수 없습니다. 그 테스트를 호스트 테스트 결과로 대체하지 않습니다. Desktop/VNC 및 Chrome 실행, 실기기 간 WBS, 실제 ENOSPC는 별도의 검증이 필요합니다(호스트 부족 공간 테스트는 statvfs fixture).
+Android ARM64 실제 기기가 연결된 경우에만 `./gradlew connectedDebugAndroidTest`를
+실행하세요. Android12·13·14·15·16별 IME/한글 조합, X11 설정/표시/터치, 화면 꺼짐/Doze,
+FGS 알림/사용자 종료, OS 종료 후 interrupted 복원, 명시적 부팅 재시작, PCM 출력,
+물리 LAN WBS/승인 실패, 저장공간 부족을 실기기 표에 기록해야 합니다.
+현재 이 환경에는 Android 실기기 및 Windows OS가 없어 이 결과는 미검증입니다.

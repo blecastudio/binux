@@ -12,22 +12,25 @@ android {
   applicationId 'studio.bleca.binux'
   minSdk 26
   targetSdk 35
-  versionCode 3
-  versionName '0.1.2'
+  versionCode 4
+  versionName '1.0.0'
   ndk { abiFilters 'arm64-v8a' }
   testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
  }
  buildFeatures { compose true; buildConfig true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget='17' }
- packaging { jniLibs { useLegacyPackaging=true; keepDebugSymbols += ['**/libbinux_bash.so'] } }
+ packaging { resources.excludes += ['META-INF/versions/9/OSGI-INF/MANIFEST.MF']; jniLibs { useLegacyPackaging=true; keepDebugSymbols += ['**/libbinux_bash.so'] } }
  externalNativeBuild { cmake { path '../../native/CMakeLists.txt'; version '3.22.1' } }
  lint { abortOnError=true }
  testOptions { unitTests { includeAndroidResources=true } }
+ sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/binux-assets')
 }
 ksp { arg('room.schemaLocation', "$projectDir/schemas") }
 configurations { robolectricSdk34; robolectricSdk35 }
 dependencies {
+ implementation 'com.github.mwiede:jsch:0.2.26'
+ implementation 'net.i2p.crypto:eddsa:0.3.0'
  implementation platform('androidx.compose:compose-bom:2025.04.01')
  implementation 'androidx.compose.material3:material3'
  implementation 'androidx.activity:activity-compose:1.10.1'
@@ -58,4 +61,22 @@ tasks.withType(Test).configureEach {
 tasks.register('verifyBundledBash') {
  doLast { if (!file('src/main/jniLibs/arm64-v8a/libbinux_bash.so').exists()) throw new GradleException('Run scripts/build-android-bash.sh first: no Bash binary is bundled') }
 }
-tasks.named('preBuild').configure { dependsOn 'verifyBundledBash' }
+tasks.register('verifyBundledRuntime') {
+ doLast {
+  if (!file('src/main/jniLibs/arm64-v8a/libbinux_vm.so').exists()) throw new GradleException('Run scripts/build-android-vm.sh first')
+  if (!file('src/main/assets/runtime-manifest.json').exists()) throw new GradleException('Pin a successfully boot-tested runtime Release using scripts/pin-runtime.py first')
+ }
+}
+tasks.register('prepareGuestAssets') {
+ inputs.dir('../../core/binux')
+ inputs.file('../../setup-binux-desktop')
+ outputs.dir(layout.buildDirectory.dir('generated/binux-assets'))
+ doLast {
+  def out=layout.buildDirectory.dir('generated/binux-assets').get().asFile
+  copy { from '../../core/binux';into new File(out,'guest-core/binux');exclude '**/__pycache__/**' }
+  copy { from '../../setup-binux-desktop';into out }
+  def hash=java.security.MessageDigest.getInstance('SHA-256').digest(file('../../setup-binux-desktop').bytes).encodeHex().toString()
+  new File(out,'installer-manifest.json').text=groovy.json.JsonOutput.toJson([url:'https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop',sha256:hash])
+ }
+}
+tasks.named('preBuild').configure { dependsOn 'verifyBundledBash','verifyBundledRuntime','prepareGuestAssets' }

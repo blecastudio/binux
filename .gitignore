@@ -23,3 +23,5 @@ android/desktop-x11/src/main/cpp/xorgproto/
 android/desktop-x11/src/main/cpp/xserver/
 
 android/desktop-x11/src/main/assets/xkb/
+
+**/.kotlin/

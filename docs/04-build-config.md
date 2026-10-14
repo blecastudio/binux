@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 4. Gradle 및 네이티브 빌드
 
 Android 설정: `android/settings.gradle`, `android/build.gradle`, `android/app/build.gradle`. 터미널 모듈은 `third_party`의 실제 소스를 빌드합니다. Bash는 GNU source archive로 교차 컴파일하며 단순히 파일 이름만 바꾼 Linux/glibc 바이너리를 사용하지 않습니다.

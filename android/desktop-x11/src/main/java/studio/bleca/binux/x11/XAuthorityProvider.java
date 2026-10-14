@@ -9,6 +9,7 @@ public final class XAuthorityProvider extends ContentProvider {
  @Override public boolean onCreate(){return true;}
  @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException {
   if(!"r".equals(mode)||!"/authority".equals(uri.getPath()))throw new FileNotFoundException("Read-only authority endpoint");
+  if(!X11RuntimeService.running)throw new FileNotFoundException("Start the X11 display server first");
   return ParcelFileDescriptor.open(new File(getContext().getFilesDir(),"x11/authority"),ParcelFileDescriptor.MODE_READ_ONLY);
  }
  @Override public String getType(Uri u){return "application/x-xauthority";}

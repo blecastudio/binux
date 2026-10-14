@@ -59,6 +59,35 @@ class WbsTests(unittest.TestCase):
         self.assertEqual(info["protocol"], 1)
         self.assertEqual(info["shares"], ["inbox"])
 
+    def test_unapproved_development_port_is_blocked(self):
+        with self.assertRaises(PermissionError):
+            wbs.open_port('127.0.0.1','server',8000,self.port)
+
+    def test_approved_port_relays_actual_http_and_revocation_closes_access(self):
+        from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+        import threading
+        from binux.state import read,write
+        http=ThreadingHTTPServer(('127.0.0.1',0),BaseHTTPRequestHandler)
+        remote_port=http.server_address[1]
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(inner):inner.send_response(200);inner.end_headers();inner.wfile.write(b'WBS authenticated port\n')
+            def log_message(inner,*args):pass
+        http.RequestHandlerClass=Handler
+        thread=threading.Thread(target=http.serve_forever,daemon=True);thread.start()
+        with patch.dict(os.environ,{'BINUX_HOME':str(self.a)}):
+            records=wbs.peers();records['client']['ports']=[remote_port];write(wbs.home()/'peers.json',records)
+        try:
+            with wbs.open_port('127.0.0.1','server',remote_port,self.port) as stream:
+                stream.sendall(b'GET / HTTP/1.0\r\nHost: localhost\r\n\r\n')
+                output=b''
+                while data:=stream.recv(4096):output+=data
+            self.assertIn(b'WBS authenticated port\n',output)
+            with patch.dict(os.environ,{'BINUX_HOME':str(self.a)}):
+                records=wbs.peers();records['client']['ports']=[];write(wbs.home()/'peers.json',records)
+            with self.assertRaises(PermissionError):wbs.open_port('127.0.0.1','server',remote_port,self.port)
+        finally:
+            http.shutdown();http.server_close();thread.join(timeout=5)
+
     def test_real_file_upload_download_and_hash(self):
         data = "binux 파일 전송\n".encode()
         digest = hashlib.sha256(data).hexdigest()

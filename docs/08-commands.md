@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 8. 명령어 관리
 
 Android: `CommandRouter.kt`가 binux 전용 명령을 처리합니다. Bash 함수 binux가 APK `binuxctl`을 호출하며, argv JSON은 UID 검사된 abstract Unix socket으로 서비스에 전달합니다. 표준 명령의 출력은 이 router가 생성하지 않습니다.

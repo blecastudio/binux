@@ -9,8 +9,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         minSdkVersion 26
         targetSdkVersion 35
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 2
+        versionName "1.0.0"
         ndk { abiFilters 'arm64-v8a' }
         buildConfigField 'String', 'COMMIT', '"6d627520b4717cdea1ed1530e6d063be7537cc8b-binux"'
 
@@ -23,6 +23,7 @@ android {
     packagingOptions.jniLibs.useLegacyPackaging false
     buildFeatures.aidl true
     buildFeatures.buildConfig true
+    testOptions { unitTests { includeAndroidResources=true } }
 
 }
 
@@ -32,6 +33,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20"
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0'
     implementation 'androidx.preference:preference:1.2.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test:core:1.6.1'
@@ -92,4 +95,10 @@ afterEvaluate {
     }
     android.sourceSets.main.java.srcDirs += 'build/generated/java'
     preBuild.dependsOn generatePrefs
+}
+
+tasks.withType(Test).configureEach {
+ dependsOn ':app:prepareRobolectricSdk'
+ systemProperty 'robolectric.offline', 'true'
+ systemProperty 'robolectric.dependency.dir', project(':app').layout.buildDirectory.dir('robolectric-sdk').get().asFile.absolutePath
 }

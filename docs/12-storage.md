@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 12. 저장공간
 
 Android: filesDir 아래 home, rootfs, packages, addons, desktop, projects/python, projects/javascript, logs, repos, cache, wbs, config. 설정은 DataStore, 세션 및 작업 메타데이터는 Room입니다. Android 시스템 디렉터리에 쓰지 않습니다. 외부 저장소의 SAF import/export는 후속 기능입니다.

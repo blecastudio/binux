@@ -1,6 +1,6 @@
 using System.Text.Json;
 namespace Binux;
-public sealed record AppSettings(string Language="ko",int Font=15,string Theme="dark")
+public sealed record AppSettings(string Language="ko",int Font=15,string Theme="dark",bool Toolbar=true,bool Fullscreen=false,string WslDistro="Debian")
 {
     public static string Root=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BlecaStudio","binux");
     private static string FileName=>Path.Combine(Root,"config","settings.json");

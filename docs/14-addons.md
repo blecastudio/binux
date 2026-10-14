@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 14. BlecaStudio 공식 보조 패키지
 
 공식 저장소 [blecastudio/binux](https://github.com/blecastudio/binux)의 존재와 쓰기 가능한 Git remote를 확인했습니다. 아직 원격 commits/Release/설치 스크립트 asset이 없으므로 실제 공식 설치 URL을 제공하지 않습니다.

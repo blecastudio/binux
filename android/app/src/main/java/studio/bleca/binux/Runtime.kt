@@ -24,14 +24,18 @@ class NativeRuntime(val context: Context, val settings: Settings, val storage: S
  val bash = "$libDir/libbinux_bash.so"
  val ctl = "$libDir/libbinuxctl.so"
  val job = "$libDir/libbinuxjob.so"
+ val bridge = "$libDir/libbinuxbridge.so"
+ val vm = "$libDir/libbinux_vm.so"
  val control = "binux.${android.os.Process.myUid()}.${UUID.randomUUID()}"
+ val stream = "$control.stream"
  val rc = File(storage.home,".binuxrc")
  init { context.assets.open("binuxrc").use { input -> rc.outputStream().use { input.copyTo(it) } } }
  fun environment(): Map<String,String> = mapOf(
-  "HOME" to storage.home.path, "PATH" to "$libDir:/system/bin:/system/xbin", "TMPDIR" to File(storage.base,"cache").path,
+  "HOME" to storage.home.canonicalPath, "PATH" to "$libDir:/system/bin:/system/xbin", "TMPDIR" to File(storage.base,"cache").path,
   "TERM" to "xterm-256color", "LANG" to "C.UTF-8", "BINUX_RUNTIME" to "native-android",
    "BINUX_LANG" to settings.language, "BINUX_VERSION" to BuildConfig.VERSION_NAME,
   "BINUX_BASH" to bash, "BINUX_CTL" to ctl, "BINUX_CONTROL" to control,
+  "BINUX_BRIDGE" to bridge, "BINUX_STREAM" to stream,
   "BINUX_HOME" to storage.base.path, "BASH_ENV" to rc.path
  )
  fun doctor(): String = listOf(
@@ -39,7 +43,8 @@ class NativeRuntime(val context: Context, val settings: Settings, val storage: S
   "Bash: ${File(bash).canExecute()} ($bash)", "PTY: ${File("/dev/ptmx").canRead()}",
   "foreground: specialUse; notification permission is user-controlled",
   "Native executables: APK nativeLibraryDir only; downloadable native packages unavailable",
-  "PRoot / apt / Python / Node.js: not bundled in Android 0.1.0",
+  "Linux VM: APK-managed engine=${File(vm).canExecute()}, requires Android API 31+",
+  "apt/pkg/Python/Node.js: install/select Debian or Ubuntu; guest binaries run under its Linux kernel",
   "Root privileges: unavailable; kernel and SELinux belong to Android"
  ).joinToString("\n")
 }

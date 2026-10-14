@@ -1,0 +1,38 @@
+--- a/src/socket.c
++++ b/src/socket.c
+@@ -968,7 +968,22 @@
+ static bool sotranslate_out4(Slirp *s, struct socket *so, struct sockaddr_in *sin)
+ {
+     if (!s->disable_dns && so->so_faddr.s_addr == s->vnameserver_addr.s_addr) {
++#ifdef __ANDROID__
++        /* Android has no /etc/resolv.conf. Use the app's DnsResolver broker. */
++        const char *value = getenv("BINUX_DNS_PORT");
++        char *end;
++        unsigned long port;
++        if (!value || so->so_fport != htons(53)) {
++            return false;
++        }
++        port = strtoul(value, &end, 10);
++        if (*end || port < 1024 || port > 65535) { return false; }
++        sin->sin_addr = loopback_addr;
++        sin->sin_port = htons(port);
++        return true;
++#else
+         return so->so_fport == htons(53) && get_dns_addr(&sin->sin_addr) >= 0;
++#endif
+     }
+ 
+     if (so->so_faddr.s_addr == s->vhost_addr.s_addr ||
+@@ -1036,6 +1051,12 @@
+ 
+     switch (addr->ss_family) {
+     case AF_INET:
++#ifdef __ANDROID__
++        if (so->so_faddr.s_addr == slirp->vnameserver_addr.s_addr &&
++            so->so_fport == htons(53)) {
++            sin->sin_port = htons(53);
++        }
++#endif
+         if ((so->so_faddr.s_addr & slirp->vnetwork_mask.s_addr) ==
+             slirp->vnetwork_addr.s_addr) {
+             uint32_t inv_mask = ~slirp->vnetwork_mask.s_addr;

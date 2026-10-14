@@ -86,7 +86,9 @@ class Addons:
         if not re.fullmatch(r"BlecaStudio/[A-Za-z0-9_.-]+", repo, re.IGNORECASE):
             raise ValueError("Official repository must belong to BlecaStudio")
         path = self.root / "cache/release.json"
-        fetch(f"https://api.github.com/repos/{repo}/releases/latest", path, 1024 * 1024)
+        tag=config().get("official_release")
+        endpoint="tags/"+urllib.parse.quote(tag,safe="") if tag else "latest"
+        fetch(f"https://api.github.com/repos/{repo}/releases/{endpoint}", path, 1024 * 1024)
         release = read(path)
         asset = next((x for x in release.get("assets", []) if x["name"] == "binux-addons.json"), None)
         if not asset:

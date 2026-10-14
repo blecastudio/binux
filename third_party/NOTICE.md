@@ -18,3 +18,14 @@ Release a corresponding source archive, this notice, LICENSE, build scripts and 
 * X.Org Xserver 21.1.16, Pixman 0.44.0, libXfont 2.0.6, X11 client/authentication/transport/protocol/XKB sources, libtirpc, libepoxy, bzip2, xkb-data 2.42: corresponding complete source/data archives, origin URLs, pinned commits where available, and SHA-256 values are in `third_party/x11/`. Their individual COPYRIGHT/COPYING/LICENSE notices are inside the archives. X.Org/Pixman components primarily use MIT/X11 licenses; libtirpc uses BSD-style notices; bzip2 uses its preserved license; libepoxy uses MIT. Sources obtained from Debian over HTTPS replace inaccessible upstream submodule hosts; reviewed patches are adapted to exactly those versions. Do not remove third-party source archives from binary distributions' corresponding source.
 * `scripts/prepare-x11.py` reconstructs verified sources. GNU gcc, bison, m4, patch and dpkg-deb are build tools, not included Android runtime executables. Google Chrome, XFCE and Linux distribution packages are not included in either APK.
 * `branding/binux.png` and `branding/binux-desktop-x11.png` are supplied by the project owner for Binux branding. They are kept unchanged and not represented as third-party open-source artwork. The application source license does not grant unrelated use of BlecaStudio branding.
+
+## binux 1.0.0 VM/SSH additions
+
+* Standalone QEMU 9.2.4 and its full static dependencies: see `vm/README.md`, complete source archives and `vm/sources.json`. Preserve QEMU's GPLv2 license separately from the Android GPLv3 UI. Corresponding guest distribution sources and exact package/source versions are included with runtime image releases.
+* mwiede JSch 0.2.26 (BSD-3-Clause) and net.i2p EdDSA 0.3.0 (CC0): complete source JARs, Maven origin URLs and SHA-256 hashes are in `ssh/`. Their per-file copyright/license headers are retained. These provide actual SSH public-key authentication and host-key verification, not an unauthenticated remote shell.
+* X11 settings modifications remove protected-method reflection, preserve fragment categories after recreation and unregister observers. AndroidX public preference APIs are used instead.
+* Optional desktop PCM playback uses Android's AudioTrack over an authenticated SSH channel. It does not disable the Linux browser sandbox or expose PulseAudio on the physical LAN.
+
+Copies of VM dependency and SSH license texts are in `third_party/legal/` and
+bundled in APK assets alongside this notice and the project license. Windows
+publish output includes the project license/notice and the xterm component licenses.

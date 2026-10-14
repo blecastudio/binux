@@ -11,10 +11,12 @@ import java.security.SecureRandom;
 
 /** A real X.Org server loaded from the APK, running independently of its Android UI. */
 public final class X11RuntimeService extends Service {
+ static volatile boolean running;
  private CmdEntryPoint server;
  private static final String CHANNEL="binux-x11-runtime";
  @Override public void onCreate() {
   super.onCreate();
+  running=false;
   NotificationManager manager=getSystemService(NotificationManager.class);
   manager.createNotificationChannel(new NotificationChannel(CHANNEL,"Binux Desktop:X11",NotificationManager.IMPORTANCE_LOW));
   PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE);
@@ -34,6 +36,7 @@ public final class X11RuntimeService extends Service {
    if(!CmdEntryPoint.start(new String[]{":1","-listen","tcp","-auth",auth.getAbsolutePath(),"-noreset"}))
     throw new IOException("Native X11 server initialization failed");
    server=new CmdEntryPoint();
+   running=true;
   } catch(Exception e) {
    Log.e("BinuxX11","X server startup failed",e);
    stopSelf();
@@ -58,5 +61,5 @@ public final class X11RuntimeService extends Service {
  private void writeField(DataOutputStream out,byte[] data)throws IOException {out.writeShort(data.length);out.write(data);}
  @Override public IBinder onBind(Intent intent){return server;}
  @Override public int onStartCommand(Intent intent,int flags,int id){if(intent!=null&&"stop".equals(intent.getAction()))stopSelf();return START_NOT_STICKY;}
- @Override public void onDestroy(){stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();android.os.Process.killProcess(android.os.Process.myPid());}
+ @Override public void onDestroy(){running=false;stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();android.os.Process.killProcess(android.os.Process.myPid());}
 }

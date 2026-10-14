@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 실제 파일 경로 및 내용 안내
 
 각 링크는 해당 파일 전체 내용을 가리킵니다. Android 0.1.1 수정 소스 ZIP에도 같은 경로와 내용이 있습니다. build/cache 및 사용자 데이터는 제외합니다.
@@ -167,3 +169,17 @@
 - [third_party/xterm-addon-search-0.15.0.tgz](../third_party/xterm-addon-search-0.15.0.tgz)
 - [third_party/xterm-xterm-5.5.0.tgz](../third_party/xterm-xterm-5.5.0.tgz)
 
+
+## 1.0.0 추가 파일
+
+- android/app/src/main/java/studio/bleca/binux/VmManager.kt: 검증 다운로드, QEMU/9p/SSH/포트/메모리/실행 상태.
+- GuestBridge.kt 및 native/bridge.c: UID 확인 소켓, 실제 stdin/stdout/stderr/윈도 크기/exit status.
+- SystemDnsProxy.kt 및 third_party/vm/patches/slirp-android-dns.patch: Android 시스템 DNS 브로커.
+- DesktopAudio.kt: SSH PCM을 AudioTrack으로 재생하고 종료/오류를 보고합니다.
+- BootReceiver.kt: 명시 opt-in과 작업별 선택만 부팅 재시작 대상으로 합니다.
+- core/binux/remote.py: 취소 race/PID 시작시간/프로세스 그룹/controlling PTY.
+- runtime/guest: 실제 guest bootstrap, pkg, venv pip, 셸 시작 설정.
+- scripts/build-runtime-image.sh 및 test-runtime-image.py: 실제 서명된 ARM64 배포판·부팅/패키지 검사.
+- scripts/build-android-vm.sh, prepare-vm.py 및 third_party/vm: 재현 가능한 APK 엔진 빌드 소스.
+- scripts/build-addons.py, core/binux/trust.py, runtime/addons: Ed25519 공개 키·서명 패키지.
+- tests/test_remote.py, test_vm_backup.py 및 Android/X11 회귀 테스트: 실제 프로세스/복원/입력/설정 검증.

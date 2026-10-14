@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 16. 한국어·영어
 
 Android strings.xml과 values-ko/strings.xml에 최초 설정, 권한/배터리 안내, 알림, 작업 제어 라벨을 제공합니다. Settings.message로 binux 주요 오류/상태를 언어 설정에 맞춥니다. Bash 환영 문구는 BINUX_LANG를 사용합니다.

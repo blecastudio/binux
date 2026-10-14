@@ -154,6 +154,11 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
         unregisterReceiver(receiver);
     }
 
+    @Override protected void onDestroy() {
+        getContentResolver().unregisterContentObserver(accessibilityObserver);
+        super.onDestroy();
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -188,22 +193,18 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
 
     public static class LoriePreferenceFragment extends PreferenceFragmentCompat implements OnPreferenceChangeListener {
         private final Runnable updateLayout = this::updatePreferencesLayout;
-        private static final Method onSetInitialValue;
-        static {
-            try {
-                //noinspection JavaReflectionMemberAccess
-                onSetInitialValue = Preference.class.getMethod("onSetInitialValue", boolean.class, Object.class);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        // AndroidX calls protected onSetInitialValue internally. Never reflect on it.
         void onSetInitialValue(Preference p) {
-            try {
-                onSetInitialValue.invoke(p, false, null);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
+            PrefsProto.Preference definition=prefs.keys.get(p.getKey());
+            if(definition==null)return;
+            if(p instanceof androidx.preference.SwitchPreferenceCompat)
+                ((androidx.preference.SwitchPreferenceCompat)p).setChecked(prefs.getBoolean(p.getKey(),(Boolean)definition.defValue));
+            else if(p instanceof SeekBarPreference)
+                ((SeekBarPreference)p).setValue(prefs.getInt(p.getKey(),(Integer)definition.defValue));
+            else if(p instanceof ListPreference)
+                ((ListPreference)p).setValue(prefs.getString(p.getKey(),(String)definition.defValue));
+            else if(p instanceof androidx.preference.EditTextPreference)
+                ((androidx.preference.EditTextPreference)p).setText(prefs.getString(p.getKey(),(String)definition.defValue));
         }
 
         final String root;
@@ -214,13 +215,15 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
 
         public LoriePreferenceFragment(String root) {
             this.root = root;
+            Bundle arguments=new Bundle();arguments.putString("category",root);setArguments(arguments);
         }
 
         @Override
         public void onResume() {
             super.onResume();
             //noinspection DataFlowIssue
-            ((LoriePreferences) getActivity()).getSupportActionBar().setTitle(getPreferenceScreen().getTitle());
+            ActionBar bar=((LoriePreferences)requireActivity()).getSupportActionBar();
+            if(bar!=null && getPreferenceScreen()!=null)bar.setTitle(getPreferenceScreen().getTitle());
         }
 
         /** @noinspection SameParameterValue*/
@@ -244,7 +247,8 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
             if ((Integer.parseInt(prefs.touchMode.get()) - 1) > 2)
                 prefs.touchMode.put("1");
 
-            setPreferencesFromResource(R.xml.preferences, root == null ? "main" : root);
+            String category=getArguments()!=null ? getArguments().getString("category") : root;
+            setPreferencesFromResource(R.xml.preferences, category == null ? "main" : category);
 
             int id;
             PreferenceScreen screen = getPreferenceScreen();
@@ -749,7 +753,8 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
 
             private String[] getArrayItems(int resourceId, Resources resources) {
                 ArrayList<String> itemList = new ArrayList<>();
-                try(TypedArray typedArray = resources.obtainTypedArray(resourceId)) {
+                TypedArray typedArray=resources.obtainTypedArray(resourceId);
+                try {
                     for (int i = 0; i < typedArray.length(); i++) {
                         int type = typedArray.getType(i);
                         if (type == TypedValue.TYPE_STRING) {
@@ -759,7 +764,7 @@ public class LoriePreferences extends AppCompatActivity implements PreferenceFra
                             itemList.addAll(Arrays.asList(resources.getStringArray(resIdOfArray)));
                         }
                     }
-                }
+                } finally { typedArray.recycle(); }
 
                 Object[] objectArray = itemList.toArray();
                 return Arrays.copyOf(objectArray, objectArray.length, String[].class);

@@ -14,7 +14,7 @@ public sealed class TerminalForm : Form
     private readonly List<WebView2> terminals=[];
     public TerminalForm()
     {
-        Text="binux 0.1.0 — BlecaStudio"; Width=1100; Height=720;
+        Text="binux 1.0.0 — BlecaStudio"; Width=1100; Height=720;
         foreach(string name in new[]{"home","rootfs","packages","addons","desktop","projects","logs","repos","cache","wbs","config"}) Directory.CreateDirectory(Path.Combine(data,name));
         var bar=new FlowLayoutPanel { Dock=DockStyle.Top,Height=40,WrapContents=false,AutoScroll=true };
         runtime.Items.AddRange(["Windows PowerShell","Linux / WSL (default distro)"]);
@@ -22,13 +22,19 @@ public sealed class TerminalForm : Form
         void AddButton(string label,Action action) { var b=new Button {Text=label,AutoSize=true}; b.Click+=(_,_)=>action();bar.Controls.Add(b); }
         AddButton("+ Tab",()=>NewTab()); AddButton("Split",()=>Split()); AddButton("Stop / Close",()=>CloseTab());
         var language=new ComboBox {DropDownStyle=ComboBoxStyle.DropDownList,Width=100};language.Items.AddRange(["한국어","English"]);language.SelectedIndex=settings.Language=="ko"?0:1;
-        language.SelectedIndexChanged+=(_,_)=>{settings=settings with {Language=language.SelectedIndex==0?"ko":"en"};settings.Save();Text=settings.Language=="ko"?"비눅스 0.1.0 — BlecaStudio":"binux 0.1.0 — BlecaStudio";};bar.Controls.Add(language);
+        language.SelectedIndexChanged+=(_,_)=>{settings=settings with {Language=language.SelectedIndex==0?"ko":"en"};settings.Save();Text=settings.Language=="ko"?"비눅스 1.0.0 — BlecaStudio":"binux 1.0.0 — BlecaStudio";};bar.Controls.Add(language);
         void ApplySettings(){settings.Save();foreach(var terminal in terminals.ToArray())Post(terminal,new {type="settings",font=settings.Font,theme=settings.Theme});}
         AddButton("A+",()=>{settings=settings with {Font=Math.Min(32,settings.Font+1)};ApplySettings();});
         AddButton("A−",()=>{settings=settings with {Font=Math.Max(9,settings.Font-1)};ApplySettings();});
         AddButton("Theme",()=>{settings=settings with {Theme=settings.Theme=="dark"?"light":"dark"};ApplySettings();});
         var searchBox=new TextBox {Width=120};bar.Controls.Add(searchBox);AddButton("Find / 검색",()=>{foreach(var terminal in terminals.Where(v=>!v.IsDisposed && tabs.SelectedTab!=null && tabs.SelectedTab.Contains(v)))Post(terminal,new {type="search",data=searchBox.Text});});
         Controls.Add(tabs); Controls.Add(bar);
+        KeyPreview=true;
+        void DisplaySettings(){bar.Visible=settings.Toolbar;FormBorderStyle=settings.Fullscreen?FormBorderStyle.None:FormBorderStyle.Sizable;WindowState=settings.Fullscreen?FormWindowState.Maximized:FormWindowState.Normal;settings.Save();}
+        AddButton("Fullscreen / F11",()=>{settings=settings with {Fullscreen=!settings.Fullscreen};DisplaySettings();});
+        AddButton("Toolbar / F10",()=>{settings=settings with {Toolbar=!settings.Toolbar};DisplaySettings();});
+        KeyDown+=(_,e)=>{if(e.KeyCode==Keys.F10){settings=settings with {Toolbar=!settings.Toolbar};DisplaySettings();e.Handled=true;}else if(e.KeyCode==Keys.F11){settings=settings with {Fullscreen=!settings.Fullscreen};DisplaySettings();e.Handled=true;}};
+        DisplaySettings();
         Shown+=(_,_)=>NewTab();
         FormClosing+=(_,_)=>{closing=true;foreach(var session in sessions.ToArray())session.Dispose();};
     }
@@ -73,9 +79,9 @@ public sealed class TerminalForm : Form
                     {
                         case "ready":
                             Post(web,new {type="settings",font=settings.Font,theme=settings.Theme});
-                            string command=selection==0?"powershell.exe -NoLogo":"wsl.exe --exec /bin/bash -i";
+                            string command=selection==0?"powershell.exe -NoLogo":$"wsl.exe --distribution {settings.WslDistro} --exec /bin/bash -i";
                             pty.Start(command,Path.Combine(data,"home"));
-                            Post(web,new {type="banner",data="binux 0.1.0 / BlecaStudio\r\nRuntime: "+(selection==0?"Windows native PowerShell":"Linux / WSL")+"\r\nDesktop: optional\r\n"});
+                            Post(web,new {type="banner",data="binux 1.0.0 / BlecaStudio\r\nRuntime: "+(selection==0?"Windows native PowerShell":"Linux / WSL")+"\r\nDesktop: optional\r\n"});
                             break;
                         case "input": pty.Write(root.GetProperty("data").GetString() ?? "");break;
                         case "resize": pty.Resize((short)Math.Clamp(root.GetProperty("cols").GetInt32(),2,500),(short)Math.Clamp(root.GetProperty("rows").GetInt32(),2,200));break;

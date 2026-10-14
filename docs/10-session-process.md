@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 10. SessionManager / ProcessManager
 
 SessionManager는 TerminalSession을 Activity와 독립적으로 보유하고 5초마다 Room에 cwd, 실제 PID, 상태, 최대 128 KiB 텍스트 기록을 checkpoint합니다. 재시작 시 running 상태를 interrupted와 PID=-1로 바꿉니다. PID만 보고 다른 프로세스에 재연결하거나 종료하지 않습니다.

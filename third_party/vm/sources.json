@@ -1,0 +1,50 @@
+{
+  "glib": {
+    "archive": "glib2.0_2.84.4.orig.tar.xz",
+    "url": "https://deb.debian.org/debian/pool/main/g/glib2.0/glib2.0_2.84.4.orig.tar.xz",
+    "sha256": "8a9ea10943c36fc117e253f80c91e477b673525ae45762942858aef57631bb90"
+  },
+  "pcre2": {
+    "archive": "pcre2_10.45.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/p/pcre2/pcre2_10.45.orig.tar.gz",
+    "sha256": "0e138387df7835d7403b8351e2226c1377da804e0737db0e071b48f07c9d12ee"
+  },
+  "libffi": {
+    "archive": "libffi_3.4.8.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libf/libffi/libffi_3.4.8.orig.tar.gz",
+    "sha256": "cbb7f0b3b095dc506387ec1e35b891bfb4891d05b90a495bc69a10f2293f80ff"
+  },
+  "slirp": {
+    "archive": "libslirp_4.8.0.orig.tar.bz2",
+    "url": "https://deb.debian.org/debian/pool/main/libs/libslirp/libslirp_4.8.0.orig.tar.bz2",
+    "sha256": "1c2e3d30e41a055ed41f9d0b3234d0d143bc28f5ad84bb101413f830844df757"
+  },
+  "dtc": {
+    "archive": "device-tree-compiler_1.7.2.orig.tar.xz",
+    "url": "https://deb.debian.org/debian/pool/main/d/device-tree-compiler/device-tree-compiler_1.7.2.orig.tar.xz",
+    "sha256": "92d8ca769805ae1f176204230438fe52808f4e1c7944053c9eec0e649b237539"
+  },
+  "qemu": {
+    "archive": "qemu-9.2.4.tar.gz",
+    "url": "https://codeload.github.com/qemu/qemu/tar.gz/refs/tags/v9.2.4",
+    "sha256": "c60f39779f3958152cf181db7aa33cce361a075f727a910679bbc3e3815f156f"
+  },
+  "keycodemapdb": {
+    "archive": "keycodemapdb.tar.gz",
+    "url": "https://gitlab.com/qemu-project/keycodemapdb/-/archive/f5772a62ec52591ff6870b7e8ef32482371f22c6/keycodemapdb-f5772a62ec52591ff6870b7e8ef32482371f22c6.tar.gz",
+    "sha256": "d014b53382dbb17b8196ad12f50de7f20d0ef1b9f7d54b0be51a6cbb14209195",
+    "subproject": "keycodemapdb"
+  },
+  "berkeley-softfloat-3": {
+    "archive": "berkeley-softfloat-3.tar.gz",
+    "url": "https://gitlab.com/qemu-project/berkeley-softfloat-3/-/archive/b64af41c3276f97f0e181920400ee056b9c88037/berkeley-softfloat-3-b64af41c3276f97f0e181920400ee056b9c88037.tar.gz",
+    "sha256": "faae889814ea6a292f7ca03d9b36e6c7e95bab2a64777804883cc822b8d48757",
+    "subproject": "berkeley-softfloat-3"
+  },
+  "berkeley-testfloat-3": {
+    "archive": "berkeley-testfloat-3.tar.gz",
+    "url": "https://gitlab.com/qemu-project/berkeley-testfloat-3/-/archive/e7af9751d9f9fd3b47911f51a5cfd08af256a9ab/berkeley-testfloat-3-e7af9751d9f9fd3b47911f51a5cfd08af256a9ab.tar.gz",
+    "sha256": "e7a09d51dc7e96cb8422c919c85fc3833d4f788567638c9162ef5cd7db59b1df",
+    "subproject": "berkeley-testfloat-3"
+  }
+}

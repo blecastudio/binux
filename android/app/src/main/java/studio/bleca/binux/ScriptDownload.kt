@@ -4,7 +4,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 /** Minimal HTTPS text downloader for reviewed installer scripts; not a full curl replacement. */
 object ScriptDownload {
- fun fetch(args: List<String>): CommandRouter.Result = try {
+ fun fetch(args: List<String>, trusted: org.json.JSONObject?=null): CommandRouter.Result = try {
   require(args.size==2 && args[0] in listOf("-Lf","-fL","-L","-f")) { "Usage: curl -Lf <https-script-url>. This adapter supports UTF-8 scripts up to 1 MiB." }
   var url=URL(args[1]); val follow='L' in args[0]
   var result: String?=null
@@ -27,6 +27,11 @@ object ScriptDownload {
      }
      require(bytes.size<=1048576) { "Script exceeds 1 MiB limit" }
      require(bytes.none { it==0.toByte() }) { "Binary download unsupported by the script adapter" }
+     if(args[1]==DesktopManager.INSTALLER) {
+      require(trusted!=null) { "Official installer trust metadata unavailable" }
+      val hash=java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+      require(hash==trusted.getString("sha256")) { "Official installer differs from the reviewed APK version. Update binux or download and review the changed source manually." }
+     }
      result=bytes.toString(Charsets.UTF_8)
     }
    } finally { connection.disconnect() }

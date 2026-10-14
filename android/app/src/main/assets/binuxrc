@@ -2,11 +2,32 @@
 # This narrow adapter downloads actual HTTPS scripts; unsupported curl flags fail explicitly.
 curl() {
  local content status
+ if [[ ${2:-} != https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop ]];then "$BINUX_BRIDGE" curl "$@";return;fi
+ if [[ ${2:-} == https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop ]];then "$BINUX_CTL" desktop source >&2;fi
  content=$("$BINUX_CTL" script-download "$@"); status=$?
  if (( status )); then printf '%s\n' "$content" >&2; else printf '%s\n' "$content"; fi
  return "$status"
 }
-binux() { "$BINUX_CTL" "$@"; }
+binux() {
+ if [[ ${1:-} == --help || ${2:-} == --help || ${3:-} == --help ]];then "$BINUX_CTL" "$@";return;fi
+ case "${1:-} ${2:-}" in
+  'runtime install'|'runtime start'|'runtime stop')
+   local action=$2 name=${3:-debian};"$BINUX_BRIDGE" --operation "$action" --runtime "$name";;
+  'runtime forward'|'runtime unforward') local action=$2 name=${3:?Runtime required};shift 3;"$BINUX_BRIDGE" --operation "$action" --runtime "$name" "$@";;
+  'runtime uninstall') local name=${3:?Runtime required};shift 3;"$BINUX_BRIDGE" --operation uninstall --runtime "$name" "$@";;
+  'runtime exec') shift 2;local name=${1:?Debian or Ubuntu required};shift;"$BINUX_BRIDGE" --runtime "$name" "$@";;
+  'shell ') "$BINUX_BRIDGE" /bin/bash --rcfile /etc/binux/bashrc -i;;
+  'desktop install') shift 2;"$BINUX_CTL" desktop source >&2;"$BINUX_BRIDGE" setup-binux-desktop "$@";;
+  'desktop start') "$BINUX_CTL" desktop prepare && "$BINUX_BRIDGE" env DISPLAY=10.0.2.2:1 XAUTHORITY=/run/binux-bootstrap/xauthority binux desktop start;;
+  'desktop update'|'desktop stop'|'desktop uninstall') "$BINUX_BRIDGE" binux "$@";;
+  'server start') "$BINUX_CTL" "$@" && { local port;port=$("$BINUX_CTL" server port "$3") || return; "$BINUX_BRIDGE" --operation forward "$port"; };;
+  'server stop') local port;port=$("$BINUX_CTL" server port "$3") || return;"$BINUX_CTL" "$@";"$BINUX_BRIDGE" --operation unforward "$port";;
+  'storage backup'|'storage restore') "$BINUX_BRIDGE" binux "$@";;
+  addon*) "$BINUX_BRIDGE" binux "$@";;
+  wbs*) shift;"$BINUX_BRIDGE" wbs "$@";;
+  *) "$BINUX_CTL" "$@";;
+ esac
+}
 chdir() { cd "$@"; }
 unmount() { umount "$@"; }
 shh() { ssh "$@"; }
@@ -20,19 +41,28 @@ host() {
 fork() { if (( $# == 0 )); then printf 'fork <command> [args...]: start a Bash background job; use jobs/wait\n' >&2; return 2; fi; "$@" & }
 bash() { "$BINUX_BASH" --rcfile "$HOME/.binuxrc" "$@"; }
 sh() { /system/bin/sh "$@"; }
-pkg() { printf 'pkg: Native package repository is not configured. APK-managed executables only on this Android target.\n' >&2; return 69; }
-apt() { printf 'apt: requires a Debian/Ubuntu runtime, which is not installed.\n' >&2; return 69; }
-wbs() { binux wbs "$@"; }
+pkg() { "$BINUX_BRIDGE" pkg "$@"; }
+apt() { "$BINUX_BRIDGE" sudo apt "$@"; }
+apt-get() { "$BINUX_BRIDGE" sudo apt-get "$@"; }
+wbs() { "$BINUX_BRIDGE" wbs "$@"; }
+python(){ "$BINUX_BRIDGE" python3 "$@"; }
+python3(){ "$BINUX_BRIDGE" python3 "$@"; }
+pip(){ "$BINUX_BRIDGE" binux-pip "$@"; }
+pip3(){ "$BINUX_BRIDGE" binux-pip "$@"; }
+node(){ "$BINUX_BRIDGE" node "$@"; }
+npm(){ "$BINUX_BRIDGE" npm "$@"; }
+git(){ "$BINUX_BRIDGE" git "$@"; }
+ssh(){ "$BINUX_BRIDGE" ssh "$@"; }
 export HISTFILE="$HOME/.bash_history"
 HISTSIZE=5000
 HISTFILESIZE=10000
 shopt -s histappend checkwinsize
-PS1='user@binux:\w\$ '
+PS1='user@binux:~/\$ '
 if [[ $- == *i* ]]; then
  if [[ $BINUX_LANG == ko ]]; then
   printf 'binux v%s\nBlecaStudio Linux Environment\n언어: 한국어\nRuntime: Native CLI (Bash / Android 커널)\nDesktop: 선택 설치 / binux desktop status\n\n시작하려면 binux help를 입력하세요.\n' "$BINUX_VERSION"
  else
   printf "binux v%s\nBlecaStudio Linux Environment\nLanguage: English\nRuntime: Native CLI (Bash / Android kernel)\nDesktop: Optional / binux desktop status\n\nType 'binux help' to get started.\n" "$BINUX_VERSION"
  fi
- PROMPT_COMMAND='binux_last_status=$?; history -a; if (( binux_last_status )); then printf "[exit %s]\n" "$binux_last_status" >&2; fi'
+ PROMPT_COMMAND='binux_last_status=$?; if [[ "$PWD" -ef "$HOME" ]]; then PS1="user@binux:~/\\$ "; else PS1="user@binux:\\w\\$ "; fi; history -a; if (( binux_last_status )); then printf "[exit %s]\n" "$binux_last_status" >&2; fi'
 fi

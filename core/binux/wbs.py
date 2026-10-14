@@ -1,4 +1,4 @@
-"""WBS v1 host prototype: mutually approved, pinned mTLS; no unauthenticated mode."""
+"""WBS 1.0 Linux VM/WSL transport: mutually approved, pinned mTLS; no unauthenticated mode."""
 import argparse
 import base64
 import datetime as dt
@@ -53,7 +53,7 @@ def identity(ips=("127.0.0.1",)):
 def peers():
     return read(home() / "peers.json", {})
 
-def approve(cert_path, name, roots=None, commands=None):
+def approve(cert_path, name, roots=None, commands=None, ports=None):
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,48}", name):
         raise ValueError("Invalid device name")
     pem = Path(cert_path).read_text()
@@ -66,10 +66,12 @@ def approve(cert_path, name, roots=None, commands=None):
         raise ValueError("Each share must have a valid name and existing directory")
     if not isinstance(commands or [], list) or any(not isinstance(c, list) or not c or not all(isinstance(s, str) for s in c) for c in (commands or [])):
         raise ValueError("Approved commands must be a JSON list of exact argument lists")
+    if any(not isinstance(port,int) or not 1024<=port<=65535 for port in ports or []):
+        raise ValueError("Approved development ports must be 1024..65535")
     cert_file = home() / (name + ".pem")
     cert_file.write_text(pem)
     os.chmod(cert_file, 0o600)
-    trusted[name] = {"fingerprint": fp, "certificate": str(cert_file), "roots": root_map, "commands": commands or []}
+    trusted[name] = {"fingerprint": fp, "certificate": str(cert_file), "roots": root_map, "commands": commands or [], "ports": ports or []}
     write(home() / "peers.json", trusted)
     return fp
 
@@ -120,7 +122,7 @@ def operation(peer, request):
     op = request.get("op")
     if op == "info":
         import platform
-        return {"protocol": 1, "platform": platform.system(), "name": socket.gethostname(), "shares": list(peer["roots"]), "screen": "unavailable", "port_forward": "unavailable"}
+        return {"protocol": 1, "platform": platform.system(), "host_platform":os.environ.get("BINUX_DEVICE_TARGET",platform.system()), "kernel":platform.release(), "architecture":platform.machine(), "name": socket.gethostname(), "shares": list(peer["roots"]), "screen": "unavailable", "port_forward":peer.get("ports",[])}
     if op in ("get", "put", "hash"):
         root = peer["roots"].get(request.get("share"))
         if root is None:
@@ -188,6 +190,58 @@ def operation(peer, request):
             return {"exit_code": proc.returncode, "output": output.read(128 * 1024).decode("utf-8", errors="replace")}
     raise ValueError("Unsupported WBS operation")
 
+def relay(left,right,approved):
+    import select
+    left.settimeout(15);right.settimeout(15)
+    while approved():
+        pending=[item for item in (left,right) if isinstance(item,ssl.SSLSocket) and item.pending()]
+        readable=pending or select.select([left,right],[],[],1)[0]
+        for source in readable:
+            target=right if source is left else left
+            data=source.recv(65536)
+            if not data:return
+            target.sendall(data)
+
+def open_port(ip,peer,remote_port,port=58290):
+    entry=peers()[peer]
+    raw=socket.create_connection((ip,port),timeout=10)
+    secure=None
+    try:
+        secure=context(peer=peer).wrap_socket(raw,server_hostname=ip)
+        if hashlib.sha256(secure.getpeercert(binary_form=True)).hexdigest()!=entry['fingerprint']:
+            raise ssl.SSLError('Device fingerprint mismatch')
+        secure.sendall((json.dumps({'op':'port','port':remote_port})+'\n').encode())
+        response=bytearray()
+        while len(response)<4096:
+            byte=secure.recv(1)
+            if not byte:raise ConnectionError('Port request closed')
+            if byte==b'\n':break
+            response+=byte
+        else:raise ValueError('Port response exceeds limit')
+        value=json.loads(response)
+        if not value['ok']:raise PermissionError(value['error'])
+        return secure
+    except Exception:
+        if secure is not None:secure.close()
+        raw.close();raise
+
+class PortProxy(socketserver.ThreadingTCPServer):
+    allow_reuse_address=True
+    daemon_threads=True
+    def __init__(self,address,endpoint,remote_port):
+        self.endpoint=endpoint;self.remote_port=remote_port
+        super().__init__(address,PortHandler)
+class PortHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        endpoint=self.server.endpoint
+        selected=read(home()/'endpoint.json',{})
+        if any(selected.get(key)!=endpoint.get(key) for key in ('ip','peer','port')):return
+        try:
+            with open_port(endpoint['ip'],endpoint['peer'],self.server.remote_port,endpoint['port']) as secure:
+                identity=peers()[endpoint['peer']]['fingerprint']
+                relay(self.request,secure,lambda:peers().get(endpoint['peer'],{}).get('fingerprint')==identity and read(home()/'endpoint.json',{}).get('peer')==endpoint['peer'])
+        except (OSError,ValueError,PermissionError):return
+
 class Handler(socketserver.StreamRequestHandler):
     def handle(self):
         self.request.settimeout(15)
@@ -201,6 +255,14 @@ class Handler(socketserver.StreamRequestHandler):
             if len(raw) > MAX_FRAME or not raw.endswith(b"\n"):
                 raise ValueError("WBS frame limit exceeded")
             request = json.loads(raw)
+            if request.get('op')=='port':
+                target=request.get('port')
+                if target not in entry.get('ports',[]):raise PermissionError('Development port not approved')
+                with socket.create_connection(('127.0.0.1',target),timeout=5) as backend:
+                    self.wfile.write(b'{"ok":true,"value":{"connected":true}}\n');self.wfile.flush()
+                    with (home()/'events.jsonl').open('a') as log:log.write(json.dumps({'time':time.time(),'peer':fp[:12],'operation':'port','port':target})+'\n')
+                    relay(self.request,backend,lambda:any(p['fingerprint']==fp and target in p.get('ports',[]) for p in peers().values()))
+                return
             result = {"ok": True, "value": operation(entry, request)}
             event = request.get("op", "unknown")
         except Exception:
@@ -242,10 +304,12 @@ def request(ip, peer, payload, port=58290):
             return response["value"]
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="wbs", description="WBS v1 host prototype (Android and Windows app transport pending)")
+    parser = argparse.ArgumentParser(prog="wbs", description="WBS 1.0 / authenticated Linux VM and Windows WSL transport")
     sub = parser.add_subparsers(dest="action", required=True)
     init = sub.add_parser("init"); init.add_argument("--ip", action="append", default=["127.0.0.1"])
     pair = sub.add_parser("pair"); pair.add_argument("certificate"); pair.add_argument("--name", required=True); pair.add_argument("--approve", action="store_true"); pair.add_argument("--share", action="append", default=[]); pair.add_argument("--commands")
+    pair.add_argument('--allow-port',type=int,action='append',default=[])
+    forward=sub.add_parser('forward');forward.add_argument('local_port',type=int);forward.add_argument('remote_port',type=int)
     rev = sub.add_parser("revoke"); rev.add_argument("name")
     serve = sub.add_parser("serve"); serve.add_argument("--bind", default="127.0.0.1"); serve.add_argument("--port", type=int, default=58290); serve.add_argument("--allow-network", action="store_true")
     for target in ("windows", "android"):
@@ -266,7 +330,7 @@ def main(argv=None):
             if not args.approve and input(message("이 기기를 승인합니까? [yes]: ", "Approve this device? [yes]: ")) != "yes":
                 raise ValueError("Pairing not approved")
             roots = dict(value.split("=", 1) for value in args.share)
-            result = approve(args.certificate, args.name, roots, read(Path(args.commands), []) if args.commands else [])
+            result = approve(args.certificate, args.name, roots, read(Path(args.commands), []) if args.commands else [],args.allow_port)
         elif action == "revoke":
             result = revoke(args.name)
         elif action == "serve":
@@ -277,6 +341,16 @@ def main(argv=None):
             with Server((args.bind, args.port)) as server:
                 print(f"WBS mTLS listening {args.bind}:{server.server_address[1]}", flush=True)
                 server.serve_forever()
+            return 0
+        elif action=='forward':
+            if not (1024<=args.local_port<=65535 and 1024<=args.remote_port<=65535):raise ValueError('Ports must be 1024..65535')
+            endpoint=read(home()/'endpoint.json',{})
+            if not endpoint:raise ValueError('Select an authenticated endpoint first')
+            # Authenticate and verify the remote approval before claiming a tunnel exists.
+            open_port(endpoint['ip'],endpoint['peer'],args.remote_port,endpoint['port']).close()
+            with PortProxy(('127.0.0.1',args.local_port),endpoint,args.remote_port) as proxy:
+                print(f'WBS mTLS forwarding 127.0.0.1:{args.local_port} -> approved remote localhost:{args.remote_port}',flush=True)
+                proxy.serve_forever()
             return 0
         elif action in ("windows", "android"):
             if ipaddress.ip_address(args.ip).is_loopback:

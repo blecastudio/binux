@@ -1,3 +1,5 @@
+> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
+
 # 9. Android 백그라운드 서비스
 
 `BinuxRuntimeService`는 사용자가 보이는 Activity에서 시작한 foreground service입니다. Manifest는 FOREGROUND_SERVICE 및 FOREGROUND_SERVICE_SPECIAL_USE, specialUse subtype 설명을 선언합니다. interactive PTY 및 명시적 local 개발 작업이 목적이며 dataSync를 일반 작업 유형으로 사용하지 않습니다.

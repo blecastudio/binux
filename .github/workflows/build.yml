@@ -18,6 +18,8 @@ jobs:
   runs-on: ubuntu-24.04
   steps:
    - uses: actions/checkout@v4
+   - name: Require a boot-tested runtime catalog before compiling APKs
+     run: test -f android/app/src/main/assets/runtime-manifest.json
    - uses: actions/setup-java@v4
      with: {distribution: temurin, java-version: '21'}
    - uses: android-actions/setup-android@v3
@@ -28,10 +30,12 @@ jobs:
    - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
    - uses: actions/setup-python@v5
      with: {python-version: '3.12'}
-   - run: sudo apt-get update && sudo apt-get install -y bison m4 patch
+   - run: sudo apt-get update && sudo apt-get install -y bison flex m4 patch autoconf automake libtool pkg-config
+   - run: python3 -m pip install meson==1.6.1 ninja==1.11.1.1
    - run: python3 scripts/prepare-x11.py
    - run: ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018" bash scripts/build-android-bash.sh
-   - run: cd android && ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug :app:testDebugUnitTest :terminal-emulator:testDebugUnitTest
+   - run: ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018" bash scripts/build-android-vm.sh
+   - run: cd android && ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug :app:testDebugUnitTest :desktop-x11:testDebugUnitTest :terminal-emulator:testDebugUnitTest
    - run: python scripts/verify-apk.py android/app/build/outputs/apk/debug/app-debug.apk
    - run: python scripts/verify-apk.py --kind x11 android/desktop-x11/build/outputs/apk/debug/desktop-x11-debug.apk
    - uses: actions/upload-artifact@v4

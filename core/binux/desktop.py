@@ -1,4 +1,4 @@
-"""Opt-in host XFCE/TigerVNC installer. Android renderer integration is pending."""
+"""Real XFCE package and process management for the VM and registered host runtime."""
 import getpass
 import os
 import platform
@@ -51,7 +51,8 @@ def desktop_action(args):
             return {"installed": False}
         jobs = rpc("list")
         current = next((j for j in reversed(jobs) if j.get("server") == "binux-desktop"), None)
-        return {**state, "job": current, "vnc": "127.0.0.1:5901 (VNC password required)"}
+        endpoint = {"display": os.environ.get("DISPLAY", "Android Desktop:X11; start from native binux Bash")} if state.get("renderer")=="x11" else {"vnc": "127.0.0.1:5901 (VNC password required)"}
+        return {**state, "job": current, **endpoint}
     if args.action == "stop":
         current = next((j for j in reversed(rpc("list")) if j.get("server") == "binux-desktop"), None)
         if current is None:
@@ -61,6 +62,22 @@ def desktop_action(args):
     if args.action == "install":
         if state.get("installed"):
             raise ValueError("Desktop is already installed")
+        if runtime.current:
+            installer=Path('/run/binux-bootstrap/setup-binux-desktop')
+            if not installer.is_file():
+                raise ValueError('Reviewed APK Desktop installer is unavailable')
+            command=['/bin/bash',str(installer)]
+            if args.yes:command.append('--yes')
+            if args.features is not None:command.extend(['--features',args.features])
+            if args.renderer is not None:command.extend(['--renderer',args.renderer])
+            if subprocess.run(command,check=False).returncode!=0:
+                raise ValueError('Desktop installation failed; inspect installer output')
+            result=read(statefile,{})
+            if not result.get('installed'):
+                raise ValueError('Installer did not commit verified package metadata')
+            return result
+        if args.yes or args.features is not None or args.renderer is not None:
+            raise ValueError('Noninteractive installer options require the binux Linux VM')
         selected = choices()
         if "wbs" in selected:
             raise ValueError("WBS Desktop Integration is not implemented; deselect this feature")
@@ -115,6 +132,8 @@ def desktop_action(args):
                 raise ValueError("X11 display unavailable or cookie authentication failed; open Desktop:X11 first")
             command = runtime.argv([str(base()/"desktop/start-x11")])
         else:
+            if state.get('renderer')=='vnc':
+                raise ValueError('The script installed TigerVNC packages. Set a password with vncpasswd, then run tigervncserver :1 -localhost yes -SecurityTypes VncAuth; managed Android Desktop start uses X11')
             command = runtime.argv(["tigervncserver", ":1", "-fg", "-localhost", "yes", "-SecurityTypes", "VncAuth", "-PasswordFile", "/root/.vnc/binux-passwd", "-xstartup", "/root/.vnc/binux-xstartup"])
         return rpc("run", argv=command, cwd=str(base() / "home"), server="binux-desktop")
     if args.action == "update":

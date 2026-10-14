@@ -1,22 +1,40 @@
-# 1. 전체 아키텍처
+# 1. binux 1.0 아키텍처
 
 ```mermaid
 flowchart TD
-  UI[Android Compose / TerminalView] --> S[BinuxRuntimeService]
-  S --> SM[SessionManager / Room]
-  SM --> PTY[JNI PTY / APK ARM64 Bash]
-  S --> BG[BackgroundProcessManager]
-  BG --> JOB[APK PIE setsid / real processes]
-  CLI[APK binuxctl] --> SOCK[UID checked local socket]
-  SOCK --> S
-  WIN[Windows WinForms / local xterm.js] --> CP[ConPTY / PowerShell or WSL]
-  HOST[Python Linux/WSL CLI] --> D[Private Unix supervisor]
-  D --> DEV[Python / Node.js / PRoot]
-  HOST --> TLS[WBS mTLS prototype]
-  HOST --> PKG[Release manifest / SHA-256 / Ed25519]
-  DEV --> GUI[Optional XFCE / password-protected loopback VNC]
+  UI[Android Compose 탭 / 분할 / IME] --> Sessions[SessionManager · Room 기록]
+  Sessions --> PTY[APK Bash · 실제 PTY]
+  PTY --> Native[Android 표준 도구 / Bash builtins]
+  PTY --> Bridge[APK binuxbridge · UID 확인 LocalSocket]
+  Bridge --> SSH[SSH 공개키 인증 / host key 고정]
+  SSH --> VM[APK QEMU · 게스트 Linux 커널]
+  VM --> Debian[Debian / apt · pip venv · npm]
+  VM --> Ubuntu[Ubuntu / apt · pip venv · npm]
+  VM --> Home[선택한 공유 홈 · 9p]
+  VM --> Private[VM별 private state / WBS 키]
+  VM --> DNS[Android DnsResolver · VPN / Private DNS]
+  Debian --> XFCE[선택 설치 XFCE]
+  Ubuntu --> XFCE
+  XFCE --> X11[Binux Desktop:X11 · X.Org · 쿠키 인증]
+  XFCE --> Audio[선택 PCM / SSH / Android AudioTrack]
+  SSH --> Ports[기본 127.0.0.1 포트 연결]
+  Debian --> WBS[TLS1.3 / mTLS WBS]
+  Ubuntu --> WBS
+  Windows[Windows ConPTY / xterm] --> WSL[선택 WSL 배포판]
+  WSL --> WBS
 ```
 
-Android 앱과 Windows 앱은 독립된 패키지입니다. Termux 앱이나 설치 환경에 의존하지 않습니다. Termux의 터미널 라이브러리 소스를 재사용하며, binux의 패키지/설정/프로세스 계층은 별도로 구성합니다. 호스트 Python 도구는 검증 및 후속 런타임 통합용이며 Android에 자동 설치되지 않습니다.
+Android 프로세스는 앱 UID로 실행하며 Linux VM의 sudo/root와 구분합니다. QEMU와
+Bash/bridge는 APK의 패키지 관리 디렉터리에서 실행합니다. 다운로드한 게스트 ELF는
+게스트 커널이 실행하며 Android execve에 전달하지 않습니다. PRoot 호스트 어댑터는
+Linux/WSL 도구에서 별도로 유지하고 VM을 fake-root로 표시하지 않습니다.
 
-Android Bash와 관리 실행파일은 APK nativeLibraryDir에서만 실행합니다. Windows native 명령과 WSL Linux 명령은 런타임 선택으로 구분합니다. PRoot는 Android 커널을 바꾸거나 실제 관리자 권한을 제공하지 않습니다. UI 프로세스와 별도 Android 앱 프로세스가 아니라, 서비스 수명과 Activity 수명을 분리합니다. 따라서 앱 프로세스가 죽으면 서비스도 종료될 수 있습니다.
+UI와 프로세스는 foreground service로 분리합니다. native 세션/작업은 Android PID
+시작시간을 확인하며 이전 PID를 재사용하지 않습니다. 게스트 작업은 SSH와 실제 PTY,
+UUID 토큰·프로세스 그룹으로 관리합니다. 전체 중지는 VM도 종료합니다. 종료 기록은
+실행 중으로 복원하지 않습니다. 재부팅 재실행은 전역 opt-in과 작업별 opt-in이 필요합니다.
+
+일반 apt/pip/npm과 공식 add-on은 분리합니다. 런타임 이미지의 크기·SHA-256은 APK에
+고정하고 공식 add-on은 SHA-256/Ed25519를 검증합니다. Desktop은 요청하기 전까지
+설치하지 않습니다. Android API/OEM의 실행 제한 및 실제 검증 범위는 [상태표](STATUS.md)에
+구분해 기록합니다.
