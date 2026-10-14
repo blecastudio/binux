@@ -1,0 +1,61 @@
+plugins {
+ id 'com.android.application'
+ id 'org.jetbrains.kotlin.android'
+ id 'org.jetbrains.kotlin.plugin.compose'
+ id 'com.google.devtools.ksp'
+}
+android {
+ namespace 'studio.bleca.binux'
+ compileSdk 35
+ ndkVersion '27.2.12479018'
+ defaultConfig {
+  applicationId 'studio.bleca.binux'
+  minSdk 26
+  targetSdk 35
+  versionCode 3
+  versionName '0.1.2'
+  ndk { abiFilters 'arm64-v8a' }
+  testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+ }
+ buildFeatures { compose true; buildConfig true }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+ kotlinOptions { jvmTarget='17' }
+ packaging { jniLibs { useLegacyPackaging=true; keepDebugSymbols += ['**/libbinux_bash.so'] } }
+ externalNativeBuild { cmake { path '../../native/CMakeLists.txt'; version '3.22.1' } }
+ lint { abortOnError=true }
+ testOptions { unitTests { includeAndroidResources=true } }
+}
+ksp { arg('room.schemaLocation', "$projectDir/schemas") }
+configurations { robolectricSdk34; robolectricSdk35 }
+dependencies {
+ implementation platform('androidx.compose:compose-bom:2025.04.01')
+ implementation 'androidx.compose.material3:material3'
+ implementation 'androidx.activity:activity-compose:1.10.1'
+ implementation 'androidx.room:room-runtime:2.7.1'
+ implementation 'androidx.room:room-ktx:2.7.1'
+ ksp 'androidx.room:room-compiler:2.7.1'
+ implementation 'androidx.datastore:datastore-preferences:1.1.5'
+ implementation project(':terminal-view')
+ testImplementation 'junit:junit:4.13.2'
+ testImplementation 'org.robolectric:robolectric:4.14.1'
+ robolectricSdk34 'org.robolectric:android-all-instrumented:14-robolectric-10818077-i7'
+ robolectricSdk35 'org.robolectric:android-all-instrumented:15-robolectric-12650502-i7'
+ androidTestImplementation 'androidx.test:runner:1.6.2'
+ androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
+tasks.register('prepareRobolectricSdk',Copy) {
+ from configurations.robolectricSdk34
+ from configurations.robolectricSdk35
+ into layout.buildDirectory.dir('robolectric-sdk')
+}
+tasks.withType(Test).configureEach {
+ dependsOn 'prepareRobolectricSdk'
+ // Gradle resolves and caches SDK jars with its configured proxy/CA.
+ // The test worker must not download into or lock the user's home directory.
+ systemProperty 'robolectric.offline', 'true'
+ systemProperty 'robolectric.dependency.dir', layout.buildDirectory.dir('robolectric-sdk').get().asFile.absolutePath
+}
+tasks.register('verifyBundledBash') {
+ doLast { if (!file('src/main/jniLibs/arm64-v8a/libbinux_bash.so').exists()) throw new GradleException('Run scripts/build-android-bash.sh first: no Bash binary is bundled') }
+}
+tasks.named('preBuild').configure { dependsOn 'verifyBundledBash' }

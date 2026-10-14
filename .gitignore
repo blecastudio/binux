@@ -1,0 +1,25 @@
+**/build/
+**/.gradle/
+**/.cxx/
+**/bin/
+**/obj/
+**/__pycache__/
+**/*.pyc
+.venv/
+.binux-data/
+**/*.egg-info/
+android/local.properties
+android/app/src/main/jniLibs/
+artifacts/*
+!artifacts/.gitkeep
+*.keystore
+*.user
+# X11 source archives are tracked; expanded dependency trees are regenerated.
+android/desktop-x11/src/main/cpp/bzip2/
+android/desktop-x11/src/main/cpp/lib*/
+android/desktop-x11/src/main/cpp/pixman/
+android/desktop-x11/src/main/cpp/xkbcomp/
+android/desktop-x11/src/main/cpp/xorgproto/
+android/desktop-x11/src/main/cpp/xserver/
+
+android/desktop-x11/src/main/assets/xkb/

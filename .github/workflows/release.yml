@@ -1,0 +1,21 @@
+name: Publish verified development preview
+on:
+ push:
+  tags: ['v0.1.2']
+ workflow_dispatch:
+permissions:
+ contents: write
+jobs:
+ publish:
+  runs-on: ubuntu-24.04
+  steps:
+   - uses: actions/checkout@v4
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.12'}
+   - run: cd downloads && sha256sum -c SHA256SUMS
+   - run: python scripts/verify-apk.py downloads/binux-0.1.2-android-arm64-debug.apk
+   - run: python scripts/verify-apk.py --kind x11 downloads/binux-desktop-x11-0.1.0-android-arm64-debug.apk
+   - name: Publish source-matched APKs and installer
+     env:
+      GH_TOKEN: ${{ github.token }}
+     run: gh release create v0.1.2 downloads/*.apk downloads/SHA256SUMS setup-binux-desktop --title 'binux 0.1.2 + Desktop:X11 0.1.0 (development preview)' --notes-file docs/RELEASE-0.1.2.md --prerelease --target "$GITHUB_SHA"

@@ -1,0 +1,5 @@
+{
+ "private": true,
+ "description": "Pinned local terminal assets. No CDN resources at runtime.",
+ "dependencies": {"@xterm/xterm": "5.5.0", "@xterm/addon-fit": "0.10.0", "@xterm/addon-search": "0.15.0"}
+}

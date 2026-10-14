@@ -1,0 +1,38 @@
+# binux Bash startup. Standard builtins and external programs retain their behavior.
+# This narrow adapter downloads actual HTTPS scripts; unsupported curl flags fail explicitly.
+curl() {
+ local content status
+ content=$("$BINUX_CTL" script-download "$@"); status=$?
+ if (( status )); then printf '%s\n' "$content" >&2; else printf '%s\n' "$content"; fi
+ return "$status"
+}
+binux() { "$BINUX_CTL" "$@"; }
+chdir() { cd "$@"; }
+unmount() { umount "$@"; }
+shh() { ssh "$@"; }
+getpid() { printf '%s\n' "$BASHPID"; }
+getppid() { printf '%s\n' "$PPID"; }
+ifconfip() { /system/bin/ip address; }
+host() {
+ if [[ ${1:-} == bash ]]; then shift; "$BINUX_BASH" --rcfile "$HOME/.binuxrc" "$@";
+ else printf 'host: only host bash is supported in Native Runtime\n' >&2; return 2; fi
+}
+fork() { if (( $# == 0 )); then printf 'fork <command> [args...]: start a Bash background job; use jobs/wait\n' >&2; return 2; fi; "$@" & }
+bash() { "$BINUX_BASH" --rcfile "$HOME/.binuxrc" "$@"; }
+sh() { /system/bin/sh "$@"; }
+pkg() { printf 'pkg: Native package repository is not configured. APK-managed executables only on this Android target.\n' >&2; return 69; }
+apt() { printf 'apt: requires a Debian/Ubuntu runtime, which is not installed.\n' >&2; return 69; }
+wbs() { binux wbs "$@"; }
+export HISTFILE="$HOME/.bash_history"
+HISTSIZE=5000
+HISTFILESIZE=10000
+shopt -s histappend checkwinsize
+PS1='user@binux:\w\$ '
+if [[ $- == *i* ]]; then
+ if [[ $BINUX_LANG == ko ]]; then
+  printf 'binux v%s\nBlecaStudio Linux Environment\n언어: 한국어\nRuntime: Native CLI (Bash / Android 커널)\nDesktop: 선택 설치 / binux desktop status\n\n시작하려면 binux help를 입력하세요.\n' "$BINUX_VERSION"
+ else
+  printf "binux v%s\nBlecaStudio Linux Environment\nLanguage: English\nRuntime: Native CLI (Bash / Android kernel)\nDesktop: Optional / binux desktop status\n\nType 'binux help' to get started.\n" "$BINUX_VERSION"
+ fi
+ PROMPT_COMMAND='binux_last_status=$?; history -a; if (( binux_last_status )); then printf "[exit %s]\n" "$binux_last_status" >&2; fi'
+fi

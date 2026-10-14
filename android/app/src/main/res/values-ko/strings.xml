@@ -1,0 +1,11 @@
+<resources>
+ <string name="app_name">비눅스</string>
+ <string name="channel">binux 활성 작업</string>
+ <string name="notification">세션 %1$d · 작업 %2$d · 서버 %3$d · 다운로드 0 · WBS 연결 안 됨</string>
+ <string name="open">열기</string><string name="stop_all">모두 종료</string><string name="pause">작업 일시중지</string>
+ <string name="setup">언어 선택 / Choose a language</string>
+ <string name="battery">Android가 작업을 종료할 수 있습니다. 알림을 허용하고 원하면 시스템 설정에서 배터리 사용을 제한 없음으로 설정하세요. 실행 유지에는 배터리가 소모됩니다. 0.1.0은 재부팅 자동 시작을 지원하지 않습니다.</string>
+ <string name="settings">설정</string><string name="new_session">새 세션</string><string name="split">분할</string><string name="restore">새 셸로 복원</string>
+ <string name="keyboard">키보드</string>
+ <string name="session_ended">종료된 프로세스입니다. 명령어를 입력하려면 새 세션을 여세요.</string>
+</resources>

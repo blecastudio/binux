@@ -1,0 +1,90 @@
+{
+  "pixman": {
+    "archive": "pixman_0.44.0.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/p/pixman/pixman_0.44.0.orig.tar.gz",
+    "sha256": "89a4c1e1e45e0b23dffe708202cb2eaffde0fe3727d7692b2e1739fec78a7dac"
+  },
+  "libfontenc": {
+    "archive": "libfontenc_1.1.8.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libf/libfontenc/libfontenc_1.1.8.orig.tar.gz",
+    "sha256": "b55039f70959a1b2f02f4ec8db071e5170528d2c9180b30575dccf7510d7fb9f"
+  },
+  "libxfont": {
+    "archive": "libxfont_2.0.6.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxfont/libxfont_2.0.6.orig.tar.gz",
+    "sha256": "a944df7b6837c8fa2067f6a5fc25d89b0acc4011cd0bc085106a03557fb502fc"
+  },
+  "libxkbfile": {
+    "archive": "libxkbfile_1.1.0.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxkbfile/libxkbfile_1.1.0.orig.tar.gz",
+    "sha256": "2a92adda3992aa7cbad758ef0b8dfeaedebb49338b772c64ddf369d78c1c51d3"
+  },
+  "libxcvt": {
+    "archive": "libxcvt_0.1.3.orig.tar.xz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxcvt/libxcvt_0.1.3.orig.tar.xz",
+    "sha256": "a929998a8767de7dfa36d6da4751cdbeef34ed630714f2f4a767b351f2442e01"
+  },
+  "libxau": {
+    "archive": "libxau_1.0.11.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxau/libxau_1.0.11.orig.tar.gz",
+    "sha256": "3a321aaceb803577a4776a5efe78836eb095a9e44bbc7a465d29463e1a14f189"
+  },
+  "libxdmcp": {
+    "archive": "libxdmcp_1.1.5.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxdmcp/libxdmcp_1.1.5.orig.tar.gz",
+    "sha256": "31a7abc4f129dcf6f27ae912c3eedcb94d25ad2e8f317f69df6eda0bc4e4f2f3"
+  },
+  "libxshmfence": {
+    "archive": "libxshmfence_1.3.3.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libxshmfence/libxshmfence_1.3.3.orig.tar.gz",
+    "sha256": "6233ccd9fa80198835efc3039cdf8086ab2b218b17e77ebdb0a19913fcee58d3"
+  },
+  "libxtrans": {
+    "archive": "xtrans_1.6.0.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/x/xtrans/xtrans_1.6.0.orig.tar.gz",
+    "sha256": "936b74c60b19c317c3f3cb1b114575032528dbdaf428740483200ea874c2ca0a"
+  },
+  "xorgproto": {
+    "archive": "xorgproto_2024.1.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/x/xorgproto/xorgproto_2024.1.orig.tar.gz",
+    "sha256": "4f6b9b4faf91e5df8265b71843a91fc73dc895be6210c84117a996545df296ce"
+  },
+  "xserver": {
+    "archive": "xorg-server_21.1.16.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/x/xorg-server/xorg-server_21.1.16.orig.tar.gz",
+    "sha256": "59fa52b63f6f8747ee2c4716decb29ced249c4c574e2a18c96b7d3b1420f7fd9"
+  },
+  "xkbcomp": {
+    "archive": "x11-xkb-utils_7.7+9.tar.xz",
+    "url": "https://deb.debian.org/debian/pool/main/x/x11-xkb-utils/x11-xkb-utils_7.7+9.tar.xz",
+    "sha256": "27ae7efb512f3b816c66b7c7290f28de4ae811972e06c5e27a9124d2eab766d4"
+  },
+  "libx11": {
+    "archive": "libx11_1.8.12.orig.tar.gz",
+    "url": "https://deb.debian.org/debian/pool/main/libx/libx11/libx11_1.8.12.orig.tar.gz",
+    "sha256": "220fbcf54b6e4d8dc40076ff4ab87954358019982490b33c7802190b62d89ce1"
+  },
+  "xkb-data": {
+    "archive": "xkb-data_2.42-1_all.deb",
+    "url": "https://deb.debian.org/debian/pool/main/x/xkeyboard-config/xkb-data_2.42-1_all.deb",
+    "sha256": "196ff18533382f64e057ea49df2bb486bd4275a4cc0917361edb560b8756dada"
+  },
+  "libtirpc": {
+    "archive": "libtirpc-5ca4ca92.tar.gz",
+    "url": "https://github.com/alisw/libtirpc",
+    "commit": "5ca4ca92f629d9d83e83544b9239abaaacf0a527",
+    "sha256": "29171625572d59526cb1e113018aa285f4d2830e3147f4c77c06d8932b1fdd73"
+  },
+  "libepoxy": {
+    "archive": "libepoxy-c84bc945.tar.gz",
+    "url": "https://github.com/anholt/libepoxy",
+    "commit": "c84bc9459357a40e46e2fec0408d04fbdde2c973",
+    "sha256": "9b898173f0e56edf712b25bc75b20fd104b628549118378a76cb9eee69f36759"
+  },
+  "bzip2": {
+    "archive": "bzip2-6a8690fc.tar.gz",
+    "url": "https://gitlab.com/bzip2/bzip2.git",
+    "commit": "6a8690fc8d26c815e798c588f796eabe9d684cf0",
+    "sha256": "7900abea3b92c9c387a3706e15505932aa336db8782e5123210bcee1ce283cec"
+  }
+}

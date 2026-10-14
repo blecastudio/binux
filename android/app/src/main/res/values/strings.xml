@@ -1,0 +1,11 @@
+<resources>
+ <string name="app_name">binux</string>
+ <string name="channel">Active binux tasks</string>
+ <string name="notification">Sessions %1$d · Jobs %2$d · Servers %3$d · Downloads 0 · WBS disconnected</string>
+ <string name="open">Open</string><string name="stop_all">Stop all</string><string name="pause">Pause jobs</string>
+ <string name="setup">Choose a language / 언어 선택</string>
+ <string name="battery">Android may stop tasks. Enable notifications and, if you choose, set battery usage to unrestricted in system settings. Keeping tasks running uses battery. Reboot autostart is not available in 0.1.0.</string>
+ <string name="settings">Settings</string><string name="new_session">New session</string><string name="split">Split</string><string name="restore">Restore a new shell</string>
+ <string name="keyboard">Keyboard</string>
+ <string name="session_ended">This process ended. Start a new session to enter commands.</string>
+</resources>
