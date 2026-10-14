@@ -31,8 +31,22 @@ jobs:
    - uses: actions/checkout@v4
    - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils qemu-system-arm ubuntu-keyring
    - run: sudo update-binfmts --enable qemu-aarch64
+   - uses: actions/cache@v4
+     id: images
+     with:
+      path: artifacts/runtime
+      key: runtime-arm64-${{ matrix.distribution }}-${{ hashFiles('scripts/build-runtime-image.sh', 'runtime/guest/**', 'runtime/trust/**') }}
    - run: scripts/build-runtime-image.sh '${{ matrix.distribution }}' artifacts/runtime
+     if: steps.images.outputs.cache-hit != 'true'
+   - uses: actions/cache/save@v4
+     if: steps.images.outputs.cache-hit != 'true'
+     with:
+      path: artifacts/runtime
+      key: runtime-arm64-${{ matrix.distribution }}-${{ hashFiles('scripts/build-runtime-image.sh', 'runtime/guest/**', 'runtime/trust/**') }}
    - run: python3 scripts/test-runtime-image.py '${{ matrix.distribution }}' artifacts/runtime
+   - uses: actions/upload-artifact@v4
+     if: always()
+     with: {name: 'runtime-boot-log-${{ matrix.distribution }}', path: 'artifacts/runtime/*-boot-test.log'}
    - uses: actions/upload-artifact@v4
      with: {name: 'runtime-${{ matrix.distribution }}', path: artifacts/runtime, compression-level: 0}
  publish:

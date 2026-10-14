@@ -9,7 +9,7 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
  (bootstrap/'authorized_keys').write_bytes(key.with_suffix('.pub').read_bytes());(bootstrap/'uid').write_text(str(os.getuid()));(bootstrap/'lang').write_text('en')
  # Snapshot: tests must not modify the released base disk.
  with socket.socket() as available:available.bind(('127.0.0.1',0));port=available.getsockname()[1]
- args=[a.qemu,'-machine','virt','-cpu','cortex-a72','-smp','2','-m','1024','-accel','tcg,thread=multi,split-wx=on','-nodefaults','-nographic','-serial','stdio','-kernel',str(directory/f'{name}-kernel'),'-initrd',str(directory/f'{name}-initrd'),'-append','root=/dev/vda rw console=ttyAMA0 net.ifnames=0','-drive',f'file={directory}/{name}-disk.qcow2,if=none,id=root,format=qcow2,snapshot=on','-device','virtio-blk-pci,drive=root','-netdev',f'user,id=net,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=net']
+ args=[a.qemu,'-machine','virt','-cpu','cortex-a72','-smp','2','-m','1024','-accel','tcg,thread=multi,split-wx=on','-nodefaults','-nographic','-serial','stdio','-object','rng-random,id=entropy,filename=/dev/urandom','-device','virtio-rng-pci,rng=entropy','-kernel',str(directory/f'{name}-kernel'),'-initrd',str(directory/f'{name}-initrd'),'-append','root=/dev/vda rw console=ttyAMA0 net.ifnames=0','-drive',f'file={directory}/{name}-disk.qcow2,if=none,id=root,format=qcow2,snapshot=on','-device','virtio-blk-pci,drive=root','-netdev',f'user,id=net,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=net']
  for tag,path,readonly in [('binux-bootstrap',bootstrap,True),('binux-home',home,False),('binux-state',state,False)]:
   args+=['-fsdev',f'local,id={tag},path={path},security_model=none'+(',readonly=on' if readonly else ''),'-device',f'virtio-9p-pci,fsdev={tag},mount_tag={tag}']
  log=directory/f'{name}-boot-test.log'
@@ -25,7 +25,9 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
      hostkey=' '.join(line.split('BINUX_SSH_HOSTKEY ',1)[1].split()[:2]);known.write_text(f'[127.0.0.1]:{port} {hostkey}\n')
      break
     time.sleep(1)
-   else:raise RuntimeError(f'Guest boot timed out; inspect {log}')
+   else:
+    print(log.read_text(errors='replace')[-60000:],flush=True)
+    raise RuntimeError(f'Guest boot timed out; inspect {log}')
    ssh=['ssh','-i',str(key),'-p',str(port),'-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o',f'UserKnownHostsFile={known}','-o','ConnectTimeout=5','binux@127.0.0.1']
    for attempt in range(30):
     check=subprocess.run([*ssh,'true'],capture_output=True)
