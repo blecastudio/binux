@@ -87,9 +87,9 @@ sudo chroot "$guest" /bin/bash -c 'python3 -c "import cryptography";python3 --ve
 sudo chroot "$guest" dpkg-query -W '-f=${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\n' > "$out/$distro-packages.tsv"
 sudo chroot "$guest" dpkg-query -W '-f=${source:Package}=${source:Version}\n' | sort -u > "$out/$distro-source-packages.txt"
 sudo mkdir -p "$guest/tmp/binux-sources"
-while IFS= read -r source_package;do
- sudo chroot "$guest" /bin/bash -c 'cd /tmp/binux-sources;apt-get source --download-only --only-source "$1"' binux-source "$source_package"
-done < "$out/$distro-source-packages.txt"
+mapfile -t source_packages < "$out/$distro-source-packages.txt"
+# Download all matching sources in one transaction; reuse the signed guest indexes.
+(cd "$guest/tmp/binux-sources";sudo apt-get -o "Dir=$guest/" -o "Dir::Etc::sourcelist=$guest/etc/apt/sources.list" -o "Dir::Etc::sourceparts=-" -o "Dir::State::lists=$guest/var/lib/apt/lists" -o "Dir::State::status=$guest/var/lib/dpkg/status" -o APT::Architecture=arm64 source --download-only --only-source "${source_packages[@]}")
 # Archives retain original .dsc/.orig/.debian source files and signatures.
 sudo tar -C "$guest/tmp/binux-sources" -cf "$out/$distro-corresponding-sources.tar" .
 sudo rm -rf "$guest/tmp/binux-sources"
