@@ -11,6 +11,7 @@ jobs:
   runs-on: ubuntu-24.04
   timeout-minutes: 100
   strategy:
+   fail-fast: false
    matrix: {distribution: [debian, ubuntu]}
   steps:
    - uses: actions/checkout@v4

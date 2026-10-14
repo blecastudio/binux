@@ -7,7 +7,7 @@ out=$(realpath -m "$out");mkdir -p "$out"
 work=$(mktemp -d);guest="$work/rootfs"
 trap 'sudo umount "$guest/proc" 2>/dev/null || true; sudo rm -rf "$work"' EXIT
 case $distro in
- debian) suite=trixie;mirror=https://deb.debian.org/debian;key=/usr/share/keyrings/debian-archive-keyring.gpg;kernel=linux-image-arm64;;
+ debian) suite=trixie;mirror=https://deb.debian.org/debian;key="$root/runtime/trust/debian-archive-keyring.gpg";kernel="linux-image-arm64 systemd-networkd";;
  ubuntu) suite=noble;mirror=https://ports.ubuntu.com/ubuntu-ports;key=/usr/share/keyrings/ubuntu-archive-keyring.gpg;kernel=linux-image-generic;;
  *) exit 2;;
 esac
@@ -19,7 +19,18 @@ if [[ $distro == ubuntu ]];then
  printf 'deb https://ports.ubuntu.com/ubuntu-ports noble main universe\ndeb https://ports.ubuntu.com/ubuntu-ports noble-updates main universe\ndeb https://ports.ubuntu.com/ubuntu-ports noble-security main universe\n' | sudo tee "$guest/etc/apt/sources.list" >/dev/null
 fi
 sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o APT::Update::Error-Mode=any update
-sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$kernel" systemd-sysv initramfs-tools openssh-server sudo dbus python3 python3-venv python3-pip python3-cryptography nodejs npm git curl openssh-client iproute2 procps locales
+sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $kernel systemd-sysv initramfs-tools openssh-server sudo dbus python3 python3-venv python3-pip python3-cryptography nodejs npm git curl openssh-client iproute2 procps locales
+sudo install -d "$guest/etc/systemd/network"
+cat <<'NETWORK' | sudo tee "$guest/etc/systemd/network/20-binux.network" >/dev/null
+[Match]
+Name=eth0
+[Network]
+Address=10.0.2.15/24
+Gateway=10.0.2.2
+DNS=10.0.2.3
+NETWORK
+printf 'nameserver 10.0.2.3\n' | sudo tee "$guest/etc/resolv.conf" >/dev/null
+sudo chroot "$guest" systemctl enable systemd-networkd.service
 sudo chroot "$guest" useradd -m -s /bin/bash binux
 # A locked password prevents PAM account login even with public keys. No usable password.
 sudo chroot "$guest" usermod -p '*' binux
