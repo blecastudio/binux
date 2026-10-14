@@ -23,7 +23,7 @@ sudo sed -n 's/^deb /deb-src /p' "$guest/etc/apt/sources.list" | sudo tee -a "$g
 sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o APT::Update::Error-Mode=any update
 printf '#!/bin/sh\nexit 101\n' | sudo tee "$guest/usr/sbin/policy-rc.d" >/dev/null
 sudo chmod 755 "$guest/usr/sbin/policy-rc.d"
-sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $kernel systemd-sysv initramfs-tools openssh-server sudo dbus python3 python3-venv python3-pip python3-cryptography nodejs npm git curl openssh-client iproute2 procps locales
+sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $kernel systemd-sysv initramfs-tools openssh-server sudo dbus python3 python3-venv python3-pip python3-cryptography curl openssh-client iproute2 procps locales
 sudo install -d "$guest/etc/systemd/network"
 cat <<'NETWORK' | sudo tee "$guest/etc/systemd/network/20-binux.network" >/dev/null
 [Match]
@@ -83,7 +83,7 @@ sudo chroot "$guest" systemctl mask serial-getty@ttyAMA0.service
 # virtio PCI / 9p / ext4 must be available before mounting the root filesystem.
 printf 'virtio_pci\nvirtio_blk\nvirtio_net\n9pnet_virtio\n9p\n' | sudo tee -a "$guest/etc/initramfs-tools/modules" >/dev/null
 sudo chroot "$guest" update-initramfs -u -k all
-sudo chroot "$guest" /bin/bash -c 'python3 -c "import cryptography";node -e "console.log(process.version)";python3 --version;apt-get --version | head -1'
+sudo chroot "$guest" /bin/bash -c 'python3 -c "import cryptography";python3 --version;apt-get --version | head -1'
 # Record exact package/source versions for reproducibility and GPL source retrieval.
 sudo chroot "$guest" dpkg-query -W '-f=${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\n' > "$out/$distro-packages.tsv"
 sudo chroot "$guest" dpkg-query -W '-f=${source:Package}=${source:Version}\n' | sort -u > "$out/$distro-source-packages.txt"

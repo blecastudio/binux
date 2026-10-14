@@ -6,8 +6,22 @@ on:
  workflow_dispatch:
 permissions:
  contents: write
+ actions: write
+concurrency:
+ group: binux-runtime-images
+ cancel-in-progress: true
 jobs:
+ cleanup:
+  runs-on: ubuntu-24.04
+  steps:
+   - env: {GH_TOKEN: '${{ github.token }}'}
+     run: |
+      gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=runtime-1.0&per_page=30" --jq '.workflow_runs[] | select(.name=="Build Linux VM runtime images" and (.status=="in_progress" or .status=="queued")) | .id' > old-runs.txt
+      while read -r run_id; do
+       if [ "$run_id" != "$GITHUB_RUN_ID" ];then gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/cancel" || true;fi
+      done < old-runs.txt
  images:
+  needs: cleanup
   runs-on: ubuntu-24.04
   timeout-minutes: 100
   strategy:

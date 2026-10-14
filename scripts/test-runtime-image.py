@@ -32,9 +32,9 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
     if check.returncode==0:break
     time.sleep(1)
    else:raise RuntimeError('Guest SSH authentication failed: '+check.stderr.decode(errors='replace'))
-   checks="set -eu; test $(id -u) -eq "+str(os.getuid())+"; uname -r; . /etc/os-release; test \"$ID\" = "+name+"; python3 -c 'print(\"한국어 Python process\")'; node -e 'console.log(\"Node process\")'; printf shared-home > /home/binux/vm-test.txt; sudo apt-get -o APT::Update::Error-Mode=any update; pkg --help"
+   checks="set -eu; test $(id -u) -eq "+str(os.getuid())+"; uname -r; . /etc/os-release; test \"$ID\" = "+name+"; python3 -c 'print(\"한국어 Python process\")'; printf shared-home > /home/binux/vm-test.txt; sudo apt-get -o APT::Update::Error-Mode=any update; pkg --help; pkg install -y nodejs npm; node -e 'console.log(\"Node process\")'; binux-pip install flask fastapi; python3 -m venv /home/binux/test-project; /home/binux/.venv/bin/python -c 'import flask,fastapi;print(\"pip Python dependencies installed\")'; npm install --prefix /home/binux/test-js express"
    import shlex
-   subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash -ec '+shlex.quote(checks)],check=True,timeout=180)
+   subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash -ec '+shlex.quote(checks)],check=True,timeout=1200)
    assert (home/'vm-test.txt').read_text()=='shared-home'
    # A wrong client key must fail even though the correct device was bootstrapped.
    other=work/'other';subprocess.run(['ssh-keygen','-q','-t','ed25519','-N','','-f',str(other)],check=True)
