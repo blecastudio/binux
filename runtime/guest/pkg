@@ -8,6 +8,7 @@ for package; do
  packages+=("$package")
 done
 case $action in
+ --help|-h|help) printf 'pkg uses apt in the selected Linux VM. update|upgrade|install|remove|search|show|list [packages]\n';exit 0;;
  update) exec sudo apt-get -o APT::Update::Error-Mode=any update "$@";;
  install|remove|upgrade) exec sudo apt-get "$action" "${packages[@]}";;
  search|show) exec apt-cache "$action" "${packages[@]}";;

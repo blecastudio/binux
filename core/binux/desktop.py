@@ -108,10 +108,18 @@ def desktop_action(args):
     if args.action == "start":
         if any(j.get("server") == "binux-desktop" and j["state"] in ("running", "paused", "stopping") for j in rpc("list")):
             raise ValueError("Desktop is already running")
-        command = runtime.argv(["tigervncserver", ":1", "-fg", "-localhost", "yes", "-SecurityTypes", "VncAuth", "-PasswordFile", "/root/.vnc/binux-passwd", "-xstartup", "/root/.vnc/binux-xstartup"])
+        if state.get("renderer") == "x11":
+            if not os.environ.get("DISPLAY") or not os.environ.get("XAUTHORITY"):
+                raise ValueError("X11 requires DISPLAY and XAUTHORITY from binux desktop start in Android")
+            if capture(runtime,["xdpyinfo"]).returncode != 0:
+                raise ValueError("X11 display unavailable or cookie authentication failed; open Desktop:X11 first")
+            command = runtime.argv([str(base()/"desktop/start-x11")])
+        else:
+            command = runtime.argv(["tigervncserver", ":1", "-fg", "-localhost", "yes", "-SecurityTypes", "VncAuth", "-PasswordFile", "/root/.vnc/binux-passwd", "-xstartup", "/root/.vnc/binux-xstartup"])
         return rpc("run", argv=command, cwd=str(base() / "home"), server="binux-desktop")
     if args.action == "update":
-        if runtime.run(["apt-get", "-o", "APT::Update::Error-Mode=any", "update"]) != 0 or runtime.run(["apt-get", "install", "--only-upgrade", "-y", *state["packages"]]) != 0:
+        privilege = ["sudo"] if runtime.current and os.getuid()!=0 else []
+        if runtime.run([*privilege,"apt-get", "-o", "APT::Update::Error-Mode=any", "update"]) != 0 or runtime.run([*privilege,"apt-get", "install", "--only-upgrade", "-y", *state["packages"]]) != 0:
             raise ValueError("Desktop update failed")
         return "Desktop packages updated"
     if args.action == "uninstall":
@@ -119,7 +127,8 @@ def desktop_action(args):
         confirmed(args.yes, message("Desktop 소유 패키지를 제거합니까? 사용자 파일은 유지합니다.", "Remove Desktop-owned packages? User files are retained."))
         if any(j.get("server") == "binux-desktop" and j["state"] in ("running", "paused", "stopping") for j in rpc("list")):
             raise ValueError("Stop Desktop before uninstalling")
-        if state["owned_packages"] and runtime.run(["apt-get", "remove", "-y", *state["owned_packages"]]) != 0:
+        privilege = ["sudo"] if runtime.current and os.getuid()!=0 else []
+        if state["owned_packages"] and runtime.run([*privilege,"apt-get", "remove", "-y", *state["owned_packages"]]) != 0:
             raise ValueError("Desktop removal failed")
         statefile.unlink()
         return "Desktop-owned packages removed; home retained"

@@ -7,7 +7,7 @@ out=$(realpath -m "$out");mkdir -p "$out"
 work=$(mktemp -d);guest="$work/rootfs"
 trap 'sudo umount "$guest/proc" 2>/dev/null || true; sudo rm -rf "$work"' EXIT
 case $distro in
- debian) suite=trixie;mirror=https://deb.debian.org/debian;key="$root/runtime/trust/debian-archive-keyring.gpg";kernel="linux-image-arm64 systemd-networkd";;
+ debian) suite=trixie;mirror=https://deb.debian.org/debian;key="$root/runtime/trust/debian-archive-keyring.gpg";kernel=linux-image-arm64;;
  ubuntu) suite=noble;mirror=https://ports.ubuntu.com/ubuntu-ports;key=/usr/share/keyrings/ubuntu-archive-keyring.gpg;kernel=linux-image-generic;;
  *) exit 2;;
 esac
@@ -43,8 +43,8 @@ sudo ln -s binux-pip "$guest/usr/local/bin/pip"
 sudo ln -s binux-pip "$guest/usr/local/bin/pip3"
 sudo install -m 644 "$root/runtime/guest/bashrc" "$guest/etc/binux/bashrc"
 sudo cp -a "$root/core/binux" "$guest/usr/local/lib/binux/"
-printf '#!/bin/sh\nPYTHONPATH=/usr/local/lib/binux exec python3 -m binux.cli "$@"\n' | sudo tee "$guest/usr/local/bin/binux" >/dev/null
-printf '#!/bin/sh\nPYTHONPATH=/usr/local/lib/binux exec python3 -m binux.wbs "$@"\n' | sudo tee "$guest/usr/local/bin/wbs" >/dev/null
+printf '#!/bin/sh\nexport PYTHONPATH=/run/binux-bootstrap/core:/usr/local/lib/binux\nexec python3 -m binux.cli "$@"\n' | sudo tee "$guest/usr/local/bin/binux" >/dev/null
+printf '#!/bin/sh\nexport PYTHONPATH=/run/binux-bootstrap/core:/usr/local/lib/binux\nexec python3 -m binux.wbs "$@"\n' | sudo tee "$guest/usr/local/bin/wbs" >/dev/null
 sudo chmod 755 "$guest/usr/local/bin/binux" "$guest/usr/local/bin/wbs"
 sudo install -m 755 "$root/setup-binux-desktop" "$guest/usr/local/bin/setup-binux-desktop"
 cat <<'SSH' | sudo tee "$guest/etc/ssh/sshd_config.d/00-binux.conf" >/dev/null
@@ -67,6 +67,8 @@ Before=ssh.service sshd.service
 Type=oneshot
 ExecStart=/usr/local/sbin/binux-first-boot
 RemainAfterExit=yes
+StandardOutput=journal+console
+StandardError=journal+console
 [Install]
 WantedBy=multi-user.target
 SERVICE

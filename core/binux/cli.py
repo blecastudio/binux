@@ -18,7 +18,7 @@ def confirmed(yes, prompt):
         raise ValueError("Cancelled")
 
 def parser():
-    p = argparse.ArgumentParser(prog="binux", description="binux 0.1.0 / BlecaStudio — Linux/WSL host tools")
+    p = argparse.ArgumentParser(prog="binux", description="binux 1.0.0 / BlecaStudio — Linux/WSL host tools")
     s = p.add_subparsers(dest="group", required=True)
     for name in ("help", "version", "info", "doctor", "update"):
         s.add_parser(name)
@@ -52,7 +52,7 @@ def parser():
         item = addon.add_parser(name); item.add_argument("name")
         if name == "remove":
             item.add_argument("--yes", action="store_true")
-    desktop = s.add_parser("desktop"); desktop.add_argument("--runtime", choices=("debian", "ubuntu"), default="debian"); ds = desktop.add_subparsers(dest="action", required=True)
+    desktop = s.add_parser("desktop"); desktop.add_argument("--runtime", choices=("debian", "ubuntu"), default=(next((line[3:].strip('"') for line in Path("/etc/os-release").read_text().splitlines() if line.startswith("ID=")), "debian") if os.environ.get("BINUX_RUNTIME")=="linux-vm" else "debian")); ds = desktop.add_subparsers(dest="action", required=True)
     for name in ("install", "start", "stop", "status", "update"):
         ds.add_parser(name)
     ds.add_parser("uninstall").add_argument("--yes", action="store_true")
@@ -182,7 +182,7 @@ def main(argv=None):
             if args.runtime:
                 return DistributionRuntime(args.runtime).run(["/bin/bash", "-i"])
             rc = base() / "home/.binuxrc"
-            rc.write_text("export HISTFILE=$HOME/.bash_history\nHISTSIZE=5000\nshopt -s histappend\nPS1='user@binux:\\w\\$ '\nchdir(){ cd \"$@\"; }\nunmount(){ umount \"$@\"; }\nshh(){ ssh \"$@\"; }\ngetpid(){ printf '%s\\n' \"$BASHPID\"; }\ngetppid(){ printf '%s\\n' \"$PPID\"; }\nifconfip(){ ip address; }\nhost(){ if [[ $1 == bash ]]; then shift; command bash \"$@\"; else command host \"$@\"; fi; }\nfork(){ if (($#)); then \"$@\" & else printf 'fork <command> [args...]\\n' >&2; return 2; fi; }\nprintf 'binux v0.1.0 / BlecaStudio\\nRuntime: Host Bash\\nDesktop: optional\\nType binux help\\n'\n")
+            rc.write_text("export HISTFILE=$HOME/.bash_history\nHISTSIZE=5000\nshopt -s histappend\nPS1='user@binux:\\w\\$ '\nchdir(){ cd \"$@\"; }\nunmount(){ umount \"$@\"; }\nshh(){ ssh \"$@\"; }\ngetpid(){ printf '%s\\n' \"$BASHPID\"; }\ngetppid(){ printf '%s\\n' \"$PPID\"; }\nifconfip(){ ip address; }\nhost(){ if [[ $1 == bash ]]; then shift; command bash \"$@\"; else command host \"$@\"; fi; }\nfork(){ if (($#)); then \"$@\" & else printf 'fork <command> [args...]\\n' >&2; return 2; fi; }\nprintf 'binux v1.0.0 / BlecaStudio\\nRuntime: Host Bash\\nDesktop: optional\\nType binux help\\n'\n")
             os.environ["HOME"] = str(base() / "home")
             return os.waitstatus_to_exitcode(pty.spawn([shutil.which("bash") or "/bin/bash", "--rcfile", str(rc), "-i"]))
         elif group == "addon":

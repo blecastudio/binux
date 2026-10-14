@@ -8,6 +8,15 @@ from .state import base, read, write
 class DistributionRuntime:
     def __init__(self, name):
         self.name = name
+        self.current = False
+        if os.environ.get("BINUX_RUNTIME") == "linux-vm":
+            text = Path("/etc/os-release").read_text()
+            distro_id = next((line[3:].strip('"') for line in text.splitlines() if line.startswith("ID=")), "")
+            if name != distro_id:
+                raise ValueError(f"Current VM is {distro_id}; select {name} in Android first")
+            self.current = True
+            self.root = Path("/")
+            return
         values = read(base() / "config/runtimes.json", {})
         if name not in values:
             raise ValueError("Distribution is not registered; use binux runtime register")
@@ -15,6 +24,8 @@ class DistributionRuntime:
         self.proot = values[name]["proot"]
 
     def argv(self, command):
+        if self.current:
+            return list(command)
         if not (self.root / "bin/bash").exists():
             raise ValueError("RootFS has no Bash")
         return [self.proot, "-0", "-r", str(self.root), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-b", "/etc/resolv.conf:/etc/resolv.conf", "-b", f'{base() / "home"}:/root', "-w", "/root", "/usr/bin/env", "HOME=/root", "PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "LANG=C.UTF-8", *command]
@@ -45,7 +56,8 @@ def native_packages(manager, args, distribution=None):
     if manager == "apt":
         if not distribution:
             raise ValueError("apt belongs to Debian/Ubuntu; provide --runtime")
-        return DistributionRuntime(distribution).run(["apt-get", *args])
+        runtime = DistributionRuntime(distribution)
+        return runtime.run((["sudo"] if runtime.current and os.getuid()!=0 else [])+["apt-get", *args])
     if manager == "pkg":
         raise ValueError("Native pkg repository is not configured; downloaded APK-private native executables are not supported on Android target 35")
     executable = shutil.which("python3" if manager == "pip" else "npm")

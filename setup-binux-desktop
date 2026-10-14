@@ -2,7 +2,9 @@
 # binux Desktop installer — BlecaStudio, GPL-3.0-only.
 # Execute only a reviewed copy. This script installs real distribution packages.
 set -euo pipefail
+original_args=("$@")
 lang=${BINUX_LANG:-ko}
+official_source='https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop'
 say() { if [[ $lang == ko* ]]; then printf '%s\n' "$1"; else printf '%s\n' "$2"; fi; }
 fail() { say "$1" "$2" >&2; exit "${3:-1}"; }
 yes=false; features='files'; renderer=x11; action=install
@@ -18,10 +20,15 @@ while (($#)); do
 done
 [[ $renderer == x11 || $renderer == vnc ]] || fail '렌더러는 x11 또는 vnc입니다.' 'Renderer must be x11 or vnc.' 2
 say 'binux Desktop — BlecaStudio 공식 설치기' 'binux Desktop — BlecaStudio installer'
+printf 'Source: %s\n' "$official_source"
 say '출처를 확인한 스크립트만 실행하세요. 선택한 패키지는 이 기기의 저장공간을 사용합니다.' 'Run only reviewed scripts. Selected packages use this device’s storage.'
 # Target 35 native Android cannot execute arbitrary downloaded Linux binaries.
 # Neither a renderer APK nor PRoot by itself removes this restriction.
 if [[ ${BINUX_RUNTIME:-} == native-android ]] || [[ -x /system/bin/getprop && ! -x /usr/bin/apt-get ]]; then
+ if [[ -n ${BINUX_BRIDGE:-} && -x $BINUX_BRIDGE ]]; then
+  say '선택한 Debian/Ubuntu VM에서 실행합니다. 먼저 binux runtime install debian 또는 ubuntu를 실행하세요.' 'Running in the selected Debian/Ubuntu VM. First install one with binux runtime install debian or ubuntu.'
+  exec "$BINUX_BRIDGE" setup-binux-desktop "${original_args[@]}"
+ fi
  say 'Android Native Bash가 감지되었습니다. X11 화면 서버는 별도 APK로 설치할 수 있습니다.' 'Android Native Bash detected. The X11 display server is available as a separate APK.'
  say '현재 APK에는 Debian/Ubuntu 실행 엔진이 없습니다. XFCE를 설치한 것으로 표시하지 않습니다.' 'This APK has no Debian/Ubuntu execution engine. XFCE installation is unavailable.'
  say 'Binux Desktop:X11 APK: https://github.com/blecastudio/binux/releases' 'Binux Desktop:X11 APK: https://github.com/blecastudio/binux/releases'
@@ -60,13 +67,13 @@ if ! $yes; then
  say '선택한 XFCE 패키지를 설치할까요? yes를 입력하세요.' 'Install the selected XFCE packages? Type yes.'
  IFS= read -r answer <&5; [[ $answer == yes ]] || fail '설치 취소됨.' 'Installation cancelled.'
 fi
-packages=(xfce4 dbus-x11 xauth x11-utils x11-xserver-utils)
+packages=(xfce4 dbus-x11 xauth x11-utils x11-xserver-utils python3)
 IFS=, read -r -a requested <<< "$features"
 for feature in "${requested[@]}"; do
  case $feature in
   files) packages+=(thunar);; editor) packages+=(mousepad);; audio) packages+=(pulseaudio);;
   tools) packages+=(git python3 python3-pip nodejs npm curl openssh-client);;
-  chromium) packages+=(chromium);;
+  chromium) [[ $ID == debian ]] || fail 'Ubuntu의 Chromium 패키지는 snap에 연결되어 있습니다. 이 설치기는 snap 구성을 지원하지 않습니다.' 'Ubuntu Chromium delegates to snap, which is not configured by this installer.' 69; packages+=(chromium);;
   ''|none) :;;
   chrome) fail 'Chrome 자동 설치는 아직 샌드박스 검증이 되지 않아 지원하지 않습니다. Chromium을 선택하세요.' 'Automatic Chrome installation is unavailable until sandbox validation; select Chromium.' 69;;
   wbs) fail 'WBS Desktop Integration은 아직 구현되지 않았습니다.' 'WBS Desktop Integration is not implemented.' 69;;
@@ -79,6 +86,10 @@ if [[ $(id -u) != 0 ]]; then
  command -v sudo >/dev/null || fail 'apt 설치 권한이 없습니다. 배포판 관리자에게 설치를 요청하세요.' 'apt requires privileges. Ask the distribution administrator to install packages.' 77
  privilege=(sudo)
 fi
+owned=()
+for package in "${packages[@]}";do
+ [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null || true) == ii* ]] || owned+=("$package")
+done
 # apt verifies distribution package signatures; no unverified curl-to-shell dependency download.
 "${privilege[@]}" apt-get -o APT::Update::Error-Mode=any update
 "${privilege[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
@@ -89,6 +100,16 @@ state_dir="${BINUX_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/binux}/desktop"
 mkdir -p "$state_dir"
 # Installation records are written only after all requested packages are verified installed.
 printf 'renderer=%s\narchitecture=%s\nfeatures=%s\n' "$renderer" "$arch" "$features" > "$state_dir/installed.txt"
+mkdir -p "${state_dir%/desktop}/config"
+python3 - "${state_dir%/desktop}/config/desktop.json" "$ID" "$renderer" "$features" "${#owned[@]}" "${owned[@]}" -- "${packages[@]}" <<'RECORD'
+import json,sys,os,tempfile
+path,distro,renderer,features,count,*packages=sys.argv[1:]
+n=int(count);owned=packages[:n];all_packages=packages[n+1:]
+data={'installed':True,'runtime':distro,'renderer':renderer,'features':features.split(','),'owned_packages':owned,'packages':all_packages,'verified_gui_launch':False}
+fd,tmp=tempfile.mkstemp(dir=os.path.dirname(path))
+with os.fdopen(fd,'w') as f:json.dump(data,f);f.flush();os.fsync(f.fileno())
+os.replace(tmp,path)
+RECORD
 cat > "$state_dir/start-x11" <<'START'
 #!/usr/bin/env bash
 set -euo pipefail

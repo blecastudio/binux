@@ -15,9 +15,10 @@ jobs:
    matrix: {distribution: [debian, ubuntu]}
   steps:
    - uses: actions/checkout@v4
-   - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils ubuntu-keyring
+   - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils qemu-system-arm ubuntu-keyring
    - run: sudo update-binfmts --enable qemu-aarch64
    - run: scripts/build-runtime-image.sh '${{ matrix.distribution }}' artifacts/runtime
+   - run: python3 scripts/test-runtime-image.py '${{ matrix.distribution }}' artifacts/runtime
    - uses: actions/upload-artifact@v4
      with: {name: 'runtime-${{ matrix.distribution }}', path: artifacts/runtime, compression-level: 0}
  publish:

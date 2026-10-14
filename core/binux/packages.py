@@ -24,7 +24,7 @@ def fetch(url, destination, limit=MAX_ARCHIVE, expected_hash=None, progress=None
     digest = hashlib.sha256()
     count = 0
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "binux/0.1.0"}), timeout=30) as response, destination.open("wb") as out:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "binux/1.0.0"}), timeout=30) as response, destination.open("wb") as out:
             if urllib.parse.urlsplit(response.url).scheme != "https":
                 raise ValueError("Insecure redirect")
             length = int(response.headers.get("Content-Length", 0))

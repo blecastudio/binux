@@ -3,7 +3,9 @@ set -euo pipefail
 export HOME=/home/binux BINUX_HOME=/var/lib/binux/state BINUX_RUNTIME=linux-vm
 export PATH=/home/binux/.venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 export LANG=C.UTF-8
+export PYTHONPATH=/run/binux-bootstrap/core:/usr/local/lib/binux
 export BINUX_LANG=$(cat /run/binux-bootstrap/lang)
 cd "${1:?Working directory required}"
 shift
+if [[ ${1:-} == setup-binux-desktop ]];then shift;exec /bin/bash /run/binux-bootstrap/setup-binux-desktop "$@";fi
 exec "$@"
