@@ -18,7 +18,11 @@ sudo mount -t proc proc "$guest/proc"
 if [[ $distro == ubuntu ]];then
  printf 'deb https://ports.ubuntu.com/ubuntu-ports noble main universe\ndeb https://ports.ubuntu.com/ubuntu-ports noble-updates main universe\ndeb https://ports.ubuntu.com/ubuntu-ports noble-security main universe\n' | sudo tee "$guest/etc/apt/sources.list" >/dev/null
 fi
+# Matching source repositories are needed for complete GPL source distribution.
+sudo sed -n 's/^deb /deb-src /p' "$guest/etc/apt/sources.list" | sudo tee -a "$guest/etc/apt/sources.list" >/dev/null
 sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get -o APT::Update::Error-Mode=any update
+printf '#!/bin/sh\nexit 101\n' | sudo tee "$guest/usr/sbin/policy-rc.d" >/dev/null
+sudo chmod 755 "$guest/usr/sbin/policy-rc.d"
 sudo chroot "$guest" /usr/bin/env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $kernel systemd-sysv initramfs-tools openssh-server sudo dbus python3 python3-venv python3-pip python3-cryptography nodejs npm git curl openssh-client iproute2 procps locales
 sudo install -d "$guest/etc/systemd/network"
 cat <<'NETWORK' | sudo tee "$guest/etc/systemd/network/20-binux.network" >/dev/null
@@ -31,6 +35,7 @@ DNS=10.0.2.3
 NETWORK
 printf 'nameserver 10.0.2.3\n' | sudo tee "$guest/etc/resolv.conf" >/dev/null
 sudo chroot "$guest" systemctl enable systemd-networkd.service
+sudo rm -f "$guest/usr/sbin/policy-rc.d"
 sudo chroot "$guest" useradd -m -s /bin/bash binux
 # A locked password prevents PAM account login even with public keys. No usable password.
 sudo chroot "$guest" usermod -p '*' binux
@@ -81,6 +86,14 @@ sudo chroot "$guest" update-initramfs -u -k all
 sudo chroot "$guest" /bin/bash -c 'python3 -c "import cryptography";node -e "console.log(process.version)";python3 --version;apt-get --version | head -1'
 # Record exact package/source versions for reproducibility and GPL source retrieval.
 sudo chroot "$guest" dpkg-query -W '-f=${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\n' > "$out/$distro-packages.tsv"
+sudo chroot "$guest" dpkg-query -W '-f=${source:Package}=${source:Version}\n' | sort -u > "$out/$distro-source-packages.txt"
+sudo mkdir -p "$guest/tmp/binux-sources"
+while IFS= read -r source_package;do
+ sudo chroot "$guest" /bin/bash -c 'cd /tmp/binux-sources;apt-get source --download-only --only-source "$1"' binux-source "$source_package"
+done < "$out/$distro-source-packages.txt"
+# Archives retain original .dsc/.orig/.debian source files and signatures.
+sudo tar -C "$guest/tmp/binux-sources" -cf "$out/$distro-corresponding-sources.tar" .
+sudo rm -rf "$guest/tmp/binux-sources"
 sudo cp -L "$guest"/boot/vmlinuz-* "$out/$distro-kernel"
 sudo cp -L "$guest"/boot/initrd.img-* "$out/$distro-initrd"
 sudo rm -f "$guest/etc/ssh/ssh_host_"* "$guest/usr/bin/qemu-aarch64-static" "$guest/var/lib/dbus/machine-id"
