@@ -2,7 +2,7 @@ name: Build Linux VM runtime images
 on:
  push:
   branches: ['runtime-1.0']
-  paths: ['runtime/**', 'scripts/build-runtime-image.sh', '.github/workflows/runtime-images.yml']
+  paths: ['runtime/**', 'scripts/build-runtime-image.sh', 'scripts/test-runtime-image.py', 'scripts/runtime-guest-checks.py', '.github/workflows/runtime-images.yml']
  workflow_dispatch:
 permissions:
  contents: write

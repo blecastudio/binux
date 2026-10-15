@@ -26,6 +26,7 @@ class BinuxRuntimeService: Service() {
  private var control: LocalServerSocket?=null
  private var uiBound=false
  private var uiVisible=true
+ private var destroyed=false
  private val checkpoint=object: Runnable { override fun run() { sessions.checkpoint(); notifyTasks(); handler.postDelayed(this,5000) } }
  override fun onCreate() {
   super.onCreate()
@@ -88,6 +89,7 @@ class BinuxRuntimeService: Service() {
  private fun idle()=::sessions.isInitialized && sessions.sessions.none { it.isRunning } && jobs.jobs.none { it.process.isAlive } && (!::virtualMachines.isInitialized || (virtualMachines.active==0 && virtualMachines.downloads==0))
  fun stopTasks() { sessions.stopAll(); jobs.stopAll();if(::desktopAudio.isInitialized)desktopAudio.stop();if(::virtualMachines.isInitialized)virtualMachines.stopAll() }
  fun notifyTasks() {
+  if(destroyed)return
   if(Build.VERSION.SDK_INT>=34) startForeground(1,notification(),foregroundTypes())
   if(::sessions.isInitialized) getSystemService(NotificationManager::class.java).notify(1,notification())
   if(!uiVisible && idle())handler.postDelayed({if(!uiVisible && idle()){stopForeground(STOP_FOREGROUND_REMOVE);stopSelf()}},2500)
@@ -108,6 +110,7 @@ class BinuxRuntimeService: Service() {
  }
  override fun onTaskRemoved(rootIntent: Intent?) { if(!settings.flag("background")) { stopTasks(); handler.postDelayed({stopSelf()},2500) } }
  override fun onDestroy() {
+  destroyed=true
   stopTasks(); handler.removeCallbacks(checkpoint); runCatching { control?.close() };guestBridge?.close(); scope.cancel()
   super.onDestroy()
  }

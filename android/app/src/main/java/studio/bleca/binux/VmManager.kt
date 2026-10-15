@@ -142,7 +142,7 @@ class VmManager(private val runtime: NativeRuntime, private val changed: () -> U
   File(bootstrap,"lang").writeText(runtime.settings.language)
   File(runtime.storage.base,"config/vm-ssh.pub").copyTo(File(bootstrap,"authorized_keys"),true)
   val state=File(dir,"state");state.mkdirs();state.setReadable(false,false);state.setWritable(false,false);state.setExecutable(false,false);state.setReadable(true,true);state.setWritable(true,true);state.setExecutable(true,true)
-  val port=ServerSocket(0,0,java.net.InetAddress.getLoopbackAddress()).use { it.localPort }
+  val port=ServerSocket(0,0,java.net.InetAddress.getByName("127.0.0.1")).use { it.localPort }
   val log=File(runtime.storage.base,"logs/vm-$name.log");val qmp=File(dir,"qmp.sock");qmp.delete()
   val args=mutableListOf(runtime.vm,"-machine","virt","-cpu","cortex-a72","-smp","2","-m",memory.toString(),"-accel","tcg,thread=multi,split-wx=on","-nodefaults","-nographic","-serial","stdio",
    "-object","rng-random,id=entropy,filename=/dev/urandom","-device","virtio-rng-pci,rng=entropy",

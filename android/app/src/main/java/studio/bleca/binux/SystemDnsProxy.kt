@@ -13,8 +13,9 @@ import java.util.concurrent.*
 @androidx.annotation.RequiresApi(29)
 class SystemDnsProxy(context: Context): AutoCloseable {
  private val network=context.getSystemService(ConnectivityManager::class.java)
- private val udp=DatagramSocket(InetSocketAddress(InetAddress.getLoopbackAddress(),0))
- private val tcp=ServerSocket(udp.localPort,16,InetAddress.getLoopbackAddress())
+ private val loopback=InetAddress.getByName("127.0.0.1")
+ private val udp=DatagramSocket(InetSocketAddress(loopback,0))
+ private val tcp=ServerSocket(udp.localPort,16,loopback)
  private val executor=Executors.newFixedThreadPool(4)
  private val callbacks=java.util.concurrent.Executor { command -> android.os.Handler(android.os.Looper.getMainLooper()).post(command) }
  private val pending=ConcurrentHashMap.newKeySet<CancellationSignal>()

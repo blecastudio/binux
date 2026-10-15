@@ -41,7 +41,7 @@ source /etc/os-release
 for cmd in apt-get dpkg-query dpkg df awk; do command -v "$cmd" >/dev/null || fail "필수 명령 없음: $cmd" "Missing required command: $cmd" 69; done
 arch=$(dpkg --print-architecture)
 say "배포판: $ID / 아키텍처: $arch / 렌더러: $renderer" "Distribution: $ID / architecture: $arch / renderer: $renderer"
-free=$(df -Pk "${HOME:?}" | awk 'NR==2 {print $4}')
+free=$(df -Pk "${HOME:?}" /usr | awk 'NR>1 {if(NR==2 || $4<free)free=$4} END {print free}')
 [[ $free =~ ^[0-9]+$ && $free -ge 2097152 ]] || fail 'Desktop 설치에는 최소 2 GiB의 여유 공간이 필요합니다.' 'Desktop installation needs at least 2 GiB free space.' 73
 [[ $action == check ]] && { say '기본 호환성 검사 통과. 패키지 설치 및 GUI 실행 검증은 아직 수행하지 않았습니다.' 'Basic compatibility passed. Package installation and GUI launch are not yet verified.'; exit 0; }
 if ! $yes; then

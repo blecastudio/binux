@@ -33,20 +33,22 @@ def process(argv, environment=None, logfile=None):
 
 
 def http_check(argv, port, expected):
-    with process(argv) as child:
-        deadline = time.monotonic() + 60
-        while time.monotonic() < deadline:
-            if child.poll() is not None:
-                raise RuntimeError(f'Server exited before readiness: {argv}')
-            try:
-                with urllib.request.urlopen(f'http://127.0.0.1:{port}', timeout=2) as reply:
-                    assert reply.status == 200
-                    assert expected in reply.read()
-                    break
-            except (OSError, urllib.error.URLError):
-                time.sleep(.5)
-        else:
-            raise RuntimeError(f'Server never became ready: {argv}')
+    with tempfile.TemporaryDirectory(prefix='binux-http-test-') as temporary:
+        log=Path(temporary)/'server.log'
+        with process(argv,logfile=log) as child:
+            deadline = time.monotonic() + 60
+            while time.monotonic() < deadline:
+                if child.poll() is not None:
+                    raise RuntimeError(f'Server exited ({child.returncode}) before readiness: {argv}\n'+log.read_text(errors='replace')[-8192:])
+                try:
+                    with urllib.request.urlopen(f'http://127.0.0.1:{port}', timeout=2) as reply:
+                        assert reply.status == 200
+                        assert expected in reply.read()
+                        break
+                except (OSError, urllib.error.URLError):
+                    time.sleep(.5)
+            else:
+                raise RuntimeError(f'Server never became ready: {argv}\n'+log.read_text(errors='replace')[-8192:])
     with socket.socket() as closed:
         assert closed.connect_ex(('127.0.0.1', port)) != 0, 'Server did not stop'
     print(f'PASS actual HTTP response and process stop: {argv[0]}', flush=True)

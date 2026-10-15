@@ -41,7 +41,8 @@ def run(token,command):
  write(path,{'pid':process.pid,'birth':birth(process.pid)})
  try:
   if cancelled.exists():stop(token)
-  return process.wait()
+  status=process.wait()
+  return 128-status if status<0 else status
  finally:
   signal_owned_group(process,signal.SIGTERM)
   time.sleep(.1)

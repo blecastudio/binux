@@ -5,6 +5,9 @@ class RemoteProcessTest(unittest.TestCase):
   self.folder=tempfile.TemporaryDirectory();self.base=pathlib.Path(self.folder.name)
   self.env={**os.environ,'BINUX_HOME':str(self.base),'PYTHONPATH':str(ROOT/'core')}
  def tearDown(self):self.folder.cleanup()
+ def test_signal_exit_status_matches_shell_convention(self):
+  result=subprocess.run(['python3','-m','binux.remote','run',uuid.uuid4().hex,'/bin/sh','-c','kill -TERM $$'],env=self.env)
+  self.assertEqual(result.returncode,143)
  def test_cancel_before_launch_never_executes_command(self):
   token=uuid.uuid4().hex
   subprocess.run(['python3','-m','binux.remote','stop',token],env=self.env,check=True)

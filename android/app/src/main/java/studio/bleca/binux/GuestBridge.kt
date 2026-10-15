@@ -48,7 +48,8 @@ class GuestBridge(private val runtime: NativeRuntime, private val vm: VmManager,
      val original=List(array.length()) { array.getString(it).also { value -> require('\u0000' !in value) } }
      val argv=if(original.first()=="setup-binux-desktop")listOf("/bin/bash","/run/binux-bootstrap/setup-binux-desktop")+original.drop(1) else original
      val guestCwd=vm.guestDirectory(request.getString(2))
-     val machine=vm.start(name,::text);val session=vm.connect(machine)
+     // Keep boot progress out of program stdout (pipes, JSON and curl output).
+     val machine=vm.start(name) { send('E',it.toByteArray()) };val session=vm.connect(machine)
      val token=java.util.UUID.randomUUID().toString().replace("-","")
      var remoteFinished=false
      try {
