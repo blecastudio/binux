@@ -29,7 +29,22 @@ jobs:
    matrix: {distribution: [debian, ubuntu]}
   steps:
    - uses: actions/checkout@v4
-   - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils qemu-system-arm ubuntu-keyring
+   - run: sudo apt-get update && sudo apt-get install -y debootstrap qemu-user-static binfmt-support qemu-utils ubuntu-keyring libglib2.0-dev libslirp-dev libfdt-dev libattr1-dev zlib1g-dev
+   - uses: actions/setup-python@v5
+     with: {python-version: '3.12'}
+   - run: python3 -m pip install meson==1.6.1 ninja==1.11.1.1
+   - uses: actions/cache@v4
+     id: engine
+     with:
+      path: native/build/vm-host/qemu-system-aarch64
+      key: host-qemu-${{ hashFiles('scripts/build-host-vm.sh', 'third_party/vm/sources.json', 'third_party/vm/patches/**') }}
+   - run: bash scripts/build-host-vm.sh
+     if: steps.engine.outputs.cache-hit != 'true'
+   - uses: actions/cache/save@v4
+     if: steps.engine.outputs.cache-hit != 'true'
+     with:
+      path: native/build/vm-host/qemu-system-aarch64
+      key: host-qemu-${{ hashFiles('scripts/build-host-vm.sh', 'third_party/vm/sources.json', 'third_party/vm/patches/**') }}
    - run: sudo update-binfmts --enable qemu-aarch64
    - uses: actions/cache@v4
      id: images
@@ -60,7 +75,7 @@ jobs:
      with:
       path: artifacts/runtime
       key: runtime-arm64-${{ matrix.distribution }}-${{ hashFiles('scripts/build-runtime-image.sh', 'runtime/guest/**', 'runtime/trust/**') }}
-   - run: python3 scripts/test-runtime-image.py '${{ matrix.distribution }}' artifacts/runtime
+   - run: python3 scripts/test-runtime-image.py '${{ matrix.distribution }}' artifacts/runtime --qemu native/build/vm-host/qemu-system-aarch64
    - uses: actions/upload-artifact@v4
      if: always()
      with: {name: 'runtime-boot-log-${{ matrix.distribution }}', path: 'artifacts/runtime/*-boot-test.log'}

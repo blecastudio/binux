@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
+import hashlib
 import sys
 import socket
 import subprocess
@@ -55,6 +57,29 @@ def http_check(argv, port, expected):
 
 
 home = Path('/home/binux')
+if sys.argv[1:]==['--node-probe']:
+    project=home/'test-js'
+    script='const app=require(process.argv[1])();app.get("/",(q,s)=>s.send("binux Express"));const server=app.listen(0,"127.0.0.1",()=>{console.log("Express listener ready");server.close();});'
+    command=['node','-e',script,str(project/'node_modules/express')]
+    result=subprocess.run(command,capture_output=True,text=True,timeout=90)
+    print(result.stdout,flush=True)
+    if result.returncode:
+        print(result.stderr,flush=True)
+        package=project/'node_modules/debug/package.json'
+        data=package.read_bytes()
+        print('Guest debug/package.json:',len(data),hashlib.sha256(data).hexdigest(),repr(data[:128]),flush=True)
+        try:json.loads(data);print('Python JSON parsing: valid',flush=True)
+        except ValueError as error:print('Python JSON parsing:',error,flush=True)
+        for label,extra,env in [('io_uring disabled',[],{**os.environ,'UV_USE_IO_URING':'0'}),('V8 interpreter',['--jitless'],os.environ)]:
+            check=subprocess.run(['node',*extra,*command[1:]],capture_output=True,text=True,env=env,timeout=90)
+            print(label,check.returncode,check.stdout,check.stderr[-4096:],flush=True)
+        with tempfile.TemporaryDirectory(prefix='binux-node-ext4-') as folder:
+            shutil.copytree(project/'node_modules',Path(folder)/'node_modules')
+            check=subprocess.run(['node','-e',script,str(Path(folder)/'node_modules/express')],capture_output=True,text=True,timeout=90)
+            print('Guest ext4 copy:',check.returncode,check.stdout,check.stderr[-4096:],flush=True)
+        raise SystemExit(1)
+    print('PASS Express module loading and listener creation',flush=True)
+    raise SystemExit(0)
 if sys.argv[1:]==['--browser-only']:
     subprocess.run(['binux','desktop','install','--yes','--features','chrome'],check=True,timeout=1800)
     browser=json.loads(Path('/var/lib/binux/state/config/desktop.json').read_text())

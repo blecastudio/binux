@@ -148,7 +148,7 @@ class VmManager(private val runtime: NativeRuntime, private val changed: () -> U
    "-object","rng-random,id=entropy,filename=/dev/urandom","-device","virtio-rng-pci,rng=entropy",
    "-kernel",File(dir,"$name-kernel").path,"-initrd",File(dir,"$name-initrd").path,"-append","root=/dev/vda rw console=ttyAMA0 net.ifnames=0",
    "-drive","file=${File(dir,"$name-disk.qcow2").path},if=none,id=root,format=qcow2","-device","virtio-blk-pci,drive=root",
-   "-netdev","user,id=net,hostfwd=tcp:127.0.0.1:$port-:22","-device","virtio-net-pci,netdev=net",
+   "-netdev","user,id=net,hostfwd=tcp:127.0.0.1:$port-:22","-device","virtio-net-pci,netdev=net,romfile=",
    "-qmp","unix:${qmp.path},server=on,wait=off")
   for((id,folder,readOnly) in listOf(Triple("binux-bootstrap",bootstrap,true),Triple("binux-home",runtime.storage.home,false),Triple("binux-state",state,false))) {
    args+=listOf("-fsdev","local,id=$id,path=${folder.path},security_model=none${if(readOnly)",readonly=on" else ""}","-device","virtio-9p-pci,fsdev=$id,mount_tag=$id")
