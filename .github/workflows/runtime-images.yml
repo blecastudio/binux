@@ -38,6 +38,23 @@ jobs:
       key: runtime-arm64-${{ matrix.distribution }}-${{ hashFiles('scripts/build-runtime-image.sh', 'runtime/guest/**', 'runtime/trust/**') }}
    - run: scripts/build-runtime-image.sh '${{ matrix.distribution }}' artifacts/runtime
      if: steps.images.outputs.cache-hit != 'true'
+   - name: Preserve exact source provenance of cached base images
+     env:
+      DISTRIBUTION: '${{ matrix.distribution }}'
+      CACHE_HIT: '${{ steps.images.outputs.cache-hit }}'
+      BUILDER_HASH: '${{ hashFiles(''scripts/build-runtime-image.sh'', ''runtime/guest/**'', ''runtime/trust/**'') }}'
+     run: |
+      record="artifacts/runtime/$DISTRIBUTION-binux-source-commit.txt"
+      if [ ! -f "$record" ];then
+       if [ "$CACHE_HIT" = true ];then
+        # Legacy cache built and saved by verified workflow run 38654280893.
+        test "$BUILDER_HASH" = 25c7161b94583f8ac1aa3754f87f115deefa024cf66f207ea52dcb0f8f95e3f7
+        echo a498d4070a5d804342e2bb106cf76a1a9522458e > "$record"
+       else echo "$GITHUB_SHA" > "$record";fi
+      fi
+      image_source=$(cat "$record")
+      git fetch --depth=1 origin "$image_source"
+      git archive --format=tar.gz "$image_source" LICENSE core runtime/guest setup-binux-desktop scripts/build-runtime-image.sh > "artifacts/runtime/$DISTRIBUTION-binux-corresponding-source.tar.gz"
    - uses: actions/cache/save@v4
      if: steps.images.outputs.cache-hit != 'true'
      with:
@@ -62,7 +79,8 @@ jobs:
       import hashlib,json,pathlib,os
       root=pathlib.Path('artifacts/runtime');tag='runtime-'+os.environ['GITHUB_SHA'][:12]
       assets={p.name:{'bytes':p.stat().st_size,'sha256':hashlib.file_digest(p.open('rb'),'sha256').hexdigest(),'url':f'https://github.com/blecastudio/binux/releases/download/{tag}/{p.name}'} for p in root.iterdir()}
-      (root/'manifest.json').write_text(json.dumps({'schema':1,'source_commit':os.environ['GITHUB_SHA'],'architecture':'aarch64','disk_bytes':10737418240,'assets':assets},indent=2)+'\n')
+      image_sources={name:(root/f'{name}-binux-source-commit.txt').read_text().strip() for name in ('debian','ubuntu')}
+      (root/'manifest.json').write_text(json.dumps({'schema':1,'source_commit':os.environ['GITHUB_SHA'],'image_source_commits':image_sources,'architecture':'aarch64','disk_bytes':10737418240,'assets':assets},indent=2)+'\n')
       PY
    - env: {GH_TOKEN: '${{ github.token }}'}
      run: gh release create "runtime-${GITHUB_SHA:0:12}" artifacts/runtime/* --prerelease --title 'binux Debian/Ubuntu ARM64 VM data' --notes 'Guest disks, kernels and initrds. These are data for the APK-packaged VM, not Android native executable downloads. Package/source versions are included.' --target "$GITHUB_SHA"
