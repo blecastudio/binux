@@ -67,7 +67,7 @@ if sys.argv[1:]==['--node-probe']:
         print(result.stderr,flush=True)
         package=project/'node_modules/debug/package.json'
         data=package.read_bytes()
-        print('Guest debug/package.json:',len(data),hashlib.sha256(data).hexdigest(),repr(data[:128]),flush=True)
+        print('Guest debug/package.json:',len(data),hashlib.sha256(data).hexdigest(),'first bytes',data[:8].hex(),flush=True)
         try:json.loads(data);print('Python JSON parsing: valid',flush=True)
         except ValueError as error:print('Python JSON parsing:',error,flush=True)
         for label,extra,env in [('io_uring disabled',[],{**os.environ,'UV_USE_IO_URING':'0'}),('V8 interpreter',['--jitless'],os.environ)]:
@@ -77,6 +77,15 @@ if sys.argv[1:]==['--node-probe']:
             shutil.copytree(project/'node_modules',Path(folder)/'node_modules')
             check=subprocess.run(['node','-e',script,str(Path(folder)/'node_modules/express')],capture_output=True,text=True,timeout=90)
             print('Guest ext4 copy:',check.returncode,check.stdout,check.stderr[-4096:],flush=True)
+        # Distinguish a corrupt existing extraction from an unsupported target FS.
+        with tempfile.TemporaryDirectory(prefix='binux-node-reinstall-') as folder:
+            for label,target in [('fresh ext4',Path(folder)/'project'),('fresh shared home',home/'test-js-recovery')]:
+                target.mkdir(parents=True,exist_ok=True)
+                check=subprocess.run(['npm','install','--prefix',str(target),'--cache',str(Path(folder)/'cache'),'express'],capture_output=True,text=True,env={**os.environ,'UV_USE_IO_URING':'0'},timeout=240)
+                print(label,'install:',check.returncode,check.stdout,check.stderr[-2048:],flush=True)
+                if check.returncode==0:
+                    probe=subprocess.run(['node','-e',script,str(target/'node_modules/express')],capture_output=True,text=True,env={**os.environ,'UV_USE_IO_URING':'0'},timeout=90)
+                    print(label,'listener:',probe.returncode,probe.stdout,probe.stderr[-4096:],flush=True)
         raise SystemExit(1)
     print('PASS Express module loading and listener creation',flush=True)
     raise SystemExit(0)

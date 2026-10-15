@@ -3,7 +3,16 @@
 set -euo pipefail
 [[ ! -L $HOME/.venv ]] || { printf '~/.venv must be a directory, not a symlink\n' >&2;exit 1; }
 sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" /var/lib/binux/python-venv
+sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" /var/lib/binux/npm-cache
 mkdir -p "$HOME/.venv"
 if ! mountpoint -q "$HOME/.venv";then
  sudo mount --bind /var/lib/binux/python-venv "$HOME/.venv"
 fi
+# Keep asynchronous npm extraction off the shared 9p cache and use libuv's
+# portable filesystem backend. SSH/PAM reads these defaults on the next login.
+for setting in UV_USE_IO_URING=0 NPM_CONFIG_CACHE=/var/lib/binux/npm-cache;do
+ key=${setting%%=*}
+ if ! { [[ -f /etc/environment ]] && grep -q "^$key=" /etc/environment; };then
+  printf '%s\n' "$setting" | sudo tee -a /etc/environment >/dev/null
+ fi
+done
