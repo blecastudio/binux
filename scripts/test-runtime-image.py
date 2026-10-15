@@ -11,6 +11,7 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
  shutil.copytree(source/'core',bootstrap/'core',ignore=shutil.ignore_patterns('__pycache__'))
  for original in (source/'setup-binux-desktop',source/'scripts/runtime-guest-checks.py'):
   shutil.copy2(original,bootstrap/original.name)
+ shutil.copy2(source/'runtime/prepare-session',bootstrap/'prepare-guest-session')
  # Snapshot: tests must not modify the released base disk.
  with socket.socket() as available:available.bind(('127.0.0.1',0));port=available.getsockname()[1]
  args=[a.qemu,'-machine','virt','-cpu','cortex-a72','-smp','2','-m','1024','-accel','tcg,thread=multi,split-wx=on','-nodefaults','-nographic','-serial','stdio','-object','rng-random,id=entropy,filename=/dev/urandom','-device','virtio-rng-pci,rng=entropy','-kernel',str(directory/f'{name}-kernel'),'-initrd',str(directory/f'{name}-initrd'),'-append','root=/dev/vda rw console=ttyAMA0 net.ifnames=0','-drive',f'file={directory}/{name}-disk.qcow2,if=none,id=root,format=qcow2,snapshot=on','-device','virtio-blk-pci,drive=root','-netdev',f'user,id=net,hostfwd=tcp:127.0.0.1:{port}-:22','-device','virtio-net-pci,netdev=net']
@@ -39,10 +40,12 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
     if check.returncode==0:break
     time.sleep(1)
    else:raise RuntimeError('Guest SSH authentication failed: '+check.stderr.decode(errors='replace'))
+   subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash /run/binux-bootstrap/prepare-guest-session'],check=True,timeout=60)
    checks="set -eu; test $(id -u) -eq "+str(os.getuid())+"; uname -r; . /etc/os-release; test \"$ID\" = "+name+"; python3 -c 'print(\"한국어 Python process\")'; printf shared-home > /home/binux/vm-test.txt; sudo apt-get -o APT::Update::Error-Mode=any update; pkg --help; pkg install -y nodejs npm; node -e 'console.log(\"Node process\")'; binux-pip install flask fastapi uvicorn; python3 -m venv /home/binux/test-project; /home/binux/.venv/bin/python -c 'import flask,fastapi;print(\"pip Python dependencies installed\")'; npm install --prefix /home/binux/test-js express; /usr/bin/python3 /run/binux-bootstrap/runtime-guest-checks.py"
    import shlex
    subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash -ec '+shlex.quote(checks)],check=True,timeout=3600)
    assert (home/'vm-test.txt').read_text()=='shared-home'
+   assert not (home/'.venv/bin/python').exists(), 'pip environment leaked into the shared home instead of the per-runtime guest disk'
    # A wrong client key must fail even though the correct device was bootstrapped.
    other=work/'other';subprocess.run(['ssh-keygen','-q','-t','ed25519','-N','','-f',str(other)],check=True)
    wrong=ssh.copy();wrong[2]=str(other)

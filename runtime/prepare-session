@@ -1,0 +1,9 @@
+#!/bin/bash
+# Each distribution owns its pip environment even though project HOME is shared.
+set -euo pipefail
+[[ ! -L $HOME/.venv ]] || { printf '~/.venv must be a directory, not a symlink\n' >&2;exit 1; }
+sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" /var/lib/binux/python-venv
+mkdir -p "$HOME/.venv"
+if ! mountpoint -q "$HOME/.venv";then
+ sudo mount --bind /var/lib/binux/python-venv "$HOME/.venv"
+fi

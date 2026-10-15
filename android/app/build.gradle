@@ -70,11 +70,13 @@ tasks.register('verifyBundledRuntime') {
 tasks.register('prepareGuestAssets') {
  inputs.dir('../../core/binux')
  inputs.file('../../setup-binux-desktop')
+ inputs.file('../../runtime/prepare-session')
  outputs.dir(layout.buildDirectory.dir('generated/binux-assets'))
  doLast {
   def out=layout.buildDirectory.dir('generated/binux-assets').get().asFile
   copy { from '../../core/binux';into new File(out,'guest-core/binux');exclude '**/__pycache__/**' }
   copy { from '../../setup-binux-desktop';into out }
+  copy { from '../../runtime/prepare-session';into out;rename { 'prepare-guest-session' } }
   def hash=java.security.MessageDigest.getInstance('SHA-256').digest(file('../../setup-binux-desktop').bytes).encodeHex().toString()
   new File(out,'installer-manifest.json').text=groovy.json.JsonOutput.toJson([url:'https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop',sha256:hash])
  }

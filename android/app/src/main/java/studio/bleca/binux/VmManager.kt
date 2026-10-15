@@ -137,6 +137,7 @@ class VmManager(private val runtime: NativeRuntime, private val changed: () -> U
   }
   copyAsset("guest-core",File(bootstrap,"core"))
   copyAsset("setup-binux-desktop",File(bootstrap,"setup-binux-desktop"))
+  copyAsset("prepare-guest-session",File(bootstrap,"prepare-guest-session"))
   File(bootstrap,"uid").writeText(android.os.Process.myUid().toString())
   File(bootstrap,"lang").writeText(runtime.settings.language)
   File(runtime.storage.base,"config/vm-ssh.pub").copyTo(File(bootstrap,"authorized_keys"),true)
@@ -164,7 +165,19 @@ class VmManager(private val runtime: NativeRuntime, private val changed: () -> U
    repeat(180) {
     check(vm.process.isAlive) { "VM exited (${vm.process.exitValue()}); inspect binux runtime logs $name" }
     if(hostKey(vm)!=null) {
-     try { connect(vm).disconnect();output("$name SSH public-key authentication verified.\n");return@withLock vm } catch(_: com.jcraft.jsch.JSchException) { }
+     try {
+      val session=connect(vm)
+      try {
+       val channel=session.openChannel("exec") as com.jcraft.jsch.ChannelExec
+       val errors=ByteArrayOutputStream();channel.setErrStream(errors)
+       channel.setCommand("/usr/local/bin/binux-entry /home/binux /bin/bash /run/binux-bootstrap/prepare-guest-session")
+       channel.connect(10000)
+       repeat(300) { if(!channel.isClosed)delay(100) }
+       val result=channel.exitStatus;channel.disconnect()
+       check(result==0) { "Guest environment setup failed ($result): ${errors.toString("UTF-8").takeLast(2048)}" }
+      } finally { session.disconnect() }
+      output("$name SSH public-key authentication and isolated pip environment verified.\n");return@withLock vm
+     } catch(_: com.jcraft.jsch.JSchException) { }
     }
     delay(1000)
    }

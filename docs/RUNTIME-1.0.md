@@ -28,6 +28,9 @@ binux shell
 설치합니다. Python도 같은 venv 경로를 우선 사용합니다. 프로젝트별 격리는 별도
 `python3 -m venv PROJECT/.venv`로 구성합니다. `~/`는 Android 앱 전용 공유 홈이며
 실제 `pwd` 출력은 변경하지 않습니다. VM별 rootfs/state와 인증키는 홈과 분리합니다.
+`~/.venv`는 게스트 안에서 배포판별 `/var/lib/binux/python-venv`를 연결합니다.
+Debian/Ubuntu의 서로 다른 Python 버전과 pip 패키지가 섞이지 않으며, 네이티브
+Android 파일 보기에서는 이 게스트 전용 마운트의 내용이 보이지 않습니다.
 
 VM 하나의 기본 RAM은 1024 MiB, 최대 디스크는 10 GiB입니다. 설치기는 다운로드
 캐시와 디스크 확장에 필요한 여유 공간을 확인합니다. 두 배포판은 별도 공간을 씁니다.
@@ -111,6 +114,7 @@ binux storage restore backup.tar.gz
 VM의 실제 공유 홈·프로젝트·저장소를 백업합니다. 복원은 ~/restored-날짜에 새 폴더를
 만들고 기존 프로젝트를 덮어쓰지 않습니다. 네이티브 Android 경로 대신 상대 파일명을
 사용하세요. 인증키/private state와 전체 VM 디스크는 이 프로젝트 백업에 포함하지 않습니다.
+활성 VM의 `~/.venv` 패키지도 포함하며 다른 배포판에 그대로 재사용하지 마세요.
 Android SAF 내보내기는 아직 제공하지 않으므로 SSH/WBS 또는 사용자가 승인한 파일 도구를
 사용합니다. WBS 파일 한도보다 큰 아카이브는 SSH 등 다른 전송 수단이 필요합니다.
 
