@@ -14,7 +14,8 @@ class DesktopManager(private val service: BinuxRuntimeService) {
   "status" -> {
    val name=service.virtualMachines.defaultName()
    val record=File(service.runtime.storage.base,"rootfs/$name/state/config/desktop.json")
-   "Runtime: $name\nXFCE: ${if(record.exists() && org.json.JSONObject(record.readText()).optBoolean("installed"))"installed" else "not installed"}\nBinux Desktop:X11 APK: ${if(available())"installed" else "not installed"}\nProcess status: binux runtime exec $name binux desktop status"
+   val state=if(record.exists())org.json.JSONObject(record.readText()) else org.json.JSONObject()
+   "Runtime: $name\nXFCE: ${if(state.optBoolean("installed"))"installed" else "not installed"}\nBrowser: ${state.optString("browser","none")} / sandbox launch verified=${state.optBoolean("browser_sandbox_verified")}\nBinux Desktop:X11 APK: ${if(available())"installed" else "not installed"}\nProcess status: binux runtime exec $name binux desktop status"
   }
   "source" -> service.assets.open("installer-manifest.json").use { val manifest=org.json.JSONObject(it.bufferedReader().readText());"Publisher: BlecaStudio\nSource: ${manifest.getString("url")}\nSHA-256 (pinned in this APK): ${manifest.getString("sha256")}\nDownload is rejected if the official script differs. Guest apt verifies Debian/Ubuntu package signatures." }
   "prepare" -> {

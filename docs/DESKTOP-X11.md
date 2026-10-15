@@ -33,7 +33,7 @@ bash setup-binux-desktop --yes --features files --renderer vnc
 
 2 GiB 여유 공간, 배포판, 아키텍처, 필요한 명령, 실제 설치된 패키지 상태를 검사합니다. apt가 배포판 저장소 서명을 검증합니다. 관리자 권한이 없는 일반 Linux에서는 sudo를 통해 사용자에게 인증을 요청합니다. 네이티브 Android에 sudo나 루트 권한을 제공하지 않습니다. 모든 패키지 검증 후에만 설치 기록을 작성합니다. 이미 설치된 XFCE 프로그램은 apt가 유지합니다.
 
-Google Chrome는 ARM64용 공식 Linux 패키지가 없으며, PRoot/fake-root에서는 샌드박스 실행을 보장할 수 없습니다. 따라서 자동 Chrome 설치는 보류하고 Chromium을 명시적으로 선택할 수 있도록 했습니다. `--no-sandbox`를 사용하지 않습니다. WBS Desktop Integration은 미구현 오류를 반환합니다.
+초기 버전은 Chrome 샌드박스 검증을 제공하지 않았습니다. 1.0 설치기는 현재 Google의 공식 ARM64/amd64 저장소와 기본 샌드박스를 켠 실행 검사에 연결합니다. PRoot/fake-root는 별도로 검증되지 않았으며 `--no-sandbox`를 사용하지 않습니다. 1.0 WBS Desktop 선택 항목은 실제 WBS 명령 실행기입니다.
 
 ## 실제 X11 앱
 

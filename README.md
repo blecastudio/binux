@@ -55,8 +55,9 @@ CLI TUI입니다. 실제 apt 설치 성공 후에만 XFCE 설치 기록을 저�
 Desktop:X11은 실제 X.Org 서버이며 같은 서명 앱에만 인증 쿠키를 전달합니다.
 두 Android 앱의 툴바·전체화면 설정을 저장하고, 숨겨도 설정 버튼을 사용할 수 있습니다.
 
-Linux Google Chrome의 ARM64 공식 패키지는 자동 설치하지 않습니다. Debian Chromium
-또는 설치된 Android Chrome을 선택할 수 있으며 샌드박스를 끄지 않습니다.
+Google 공식 저장소의 amd64/ARM64 Chrome을 기본 선택으로 제공합니다. 고정한 공개 키와
+apt 서명을 확인하고, 샌드박스를 켠 실제 실행에 통과한 경우 기본 브라우저로 설정합니다.
+실행하지 못하면 Debian Chromium 또는 Android Chrome을 선택하도록 안내합니다.
 
 ## 작업 및 서버
 

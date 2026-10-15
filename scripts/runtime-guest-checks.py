@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import sys
 import socket
 import subprocess
 import tempfile
@@ -52,6 +53,14 @@ def http_check(argv, port, expected):
 
 
 home = Path('/home/binux')
+if sys.argv[1:]==['--browser-only']:
+    subprocess.run(['binux','desktop','install','--yes','--features','chrome'],check=True,timeout=1800)
+    browser=json.loads(Path('/var/lib/binux/state/config/desktop.json').read_text())
+    assert browser['installed'] and 'google-chrome-stable' in browser['packages']
+    assert browser['browser'] in ('google-chrome-stable','unavailable')
+    assert browser['browser_sandbox_verified']==(browser['browser']=='google-chrome-stable')
+    print('PASS real official Chrome packages; sandbox launch result:',browser['browser'],flush=True)
+    raise SystemExit(0)
 venv = home / '.venv/bin/python'
 http_check([str(venv), '-c', 'from flask import Flask;app=Flask(__name__);'
             'app.add_url_rule("/",view_func=lambda:"binux Flask");'

@@ -1,0 +1,30 @@
+name: Verify official Chrome in Linux VMs
+on:
+ push:
+  branches: [runtime-1.0]
+  paths: ['setup-binux-desktop', 'scripts/runtime-guest-checks.py', 'scripts/test-runtime-image.py', '.github/workflows/browser-test.yml']
+ workflow_dispatch:
+permissions:
+ contents: read
+concurrency:
+ group: binux-browser-validation
+ cancel-in-progress: true
+jobs:
+ browser:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 45
+  strategy:
+   fail-fast: false
+   matrix: {distribution: [debian, ubuntu]}
+  steps:
+   - uses: actions/checkout@v4
+   - run: sudo apt-get update && sudo apt-get install -y qemu-system-arm
+   - uses: actions/cache/restore@v4
+     with:
+      path: artifacts/runtime
+      key: runtime-arm64-${{ matrix.distribution }}-${{ hashFiles('scripts/build-runtime-image.sh', 'runtime/guest/**', 'runtime/trust/**') }}
+      fail-on-cache-miss: true
+   - run: python3 scripts/test-runtime-image.py '${{ matrix.distribution }}' artifacts/runtime --browser-only
+   - uses: actions/upload-artifact@v4
+     if: always()
+     with: {name: 'browser-boot-log-${{ matrix.distribution }}', path: 'artifacts/runtime/*-boot-test.log'}

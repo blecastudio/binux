@@ -33,10 +33,10 @@ def choices():
 
 def chrome_compatibility(arch=None, runtime="proot"):
     arch = arch or platform.machine()
-    if arch not in ("x86_64", "amd64"):
-        return False, "Google Chrome Linux packages do not support this ARM64 architecture; choose Chromium or Android Chrome handoff"
+    if arch not in ("x86_64", "amd64", "aarch64", "arm64"):
+        return False, "The verified Google Chrome repository targets ARM64 and amd64; choose a compatible browser for this architecture"
     if runtime == "proot":
-        return False, "Chrome sandbox capability cannot be established in PRoot/fake-root. No --no-sandbox fallback is permitted"
+        return False, "Google provides ARM64/amd64 packages, but Chrome sandbox capability cannot be established in PRoot/fake-root. No --no-sandbox fallback is permitted"
     return False, "Native Chrome installation adapter is not implemented for this runtime"
 
 def capture(runtime, command):

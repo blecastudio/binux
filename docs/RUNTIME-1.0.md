@@ -95,10 +95,18 @@ Desktop:X11은 자체 APK의 X.Org 서버이며 loopback TCP와 Xauthority를 �
 처음 X11 앱을 열어 초기화한 뒤 Desktop을 시작하세요.
 두 앱의 설정에서 툴바·보조키·전체화면을 저장할 수 있고 숨겨도 설정 버튼을 쓸 수 있습니다.
 
-Linux Google Chrome은 ARM64 공식 패키지가 없어 자동 설치하지 않습니다.
-Debian Chromium을 선택하거나 `binux desktop browser https://example.com`으로
-설치된 Android Chrome을 열 수 있습니다. Ubuntu Chromium의 snap 구성은 자동화하지
+Google 공식 저장소는 amd64/ARM64 안정판을 제공합니다. Chrome을 기본 선택으로
+설치하며, 검토한 공개 키 SHA-256과 apt 서명을 확인합니다. 비루트 계정에서 기본
+샌드박스를 켠 headless 페이지 실행 검사를 통과한 경우에만 기본 브라우저로 지정합니다.
+검사 결과는 Desktop 상태의 browser/browser_sandbox_verified에 저장합니다.
+실행 실패 시 Debian Chromium 또는 `binux desktop browser https://example.com`으로
+Android Chrome을 선택하도록 안내합니다. Ubuntu Chromium의 snap 구성은 자동화하지
 않습니다. 브라우저 샌드박스를 비활성화하는 옵션을 넣지 않습니다.
+
+2026-10-15에 Google의 Release 서명과 ARM64 패키지 목록을 확인했습니다.
+서명 기본 키 지문은 EB4C1BFD4F042F6DDDCCEC917721F63BD38B4796입니다.
+출처: https://dl.google.com/linux/chrome/deb/dists/stable/Release 및
+https://dl.google.com/linux/linux_signing_key.pub.
 
 오디오 기능 설치 후 `binux desktop audio start|stop|status`를 사용합니다.
 게스트 PulseAudio 모니터의 PCM을 SSH로 받아 Android AudioTrack에 씁니다.
@@ -142,6 +150,9 @@ WBS는 TLS1.3/mTLS, 기기별 인증·승인 폴더·정확한 argv 허용 목�
 현재 파일 하나의 전송 한도는 16 MiB, 원격 명령은 15초입니다. 화면 공유는 제공하지
 않습니다. Windows 앱에서는 같은 소스를 WSL에 전달합니다. Windows 실행파일을
 Android에서 직접 실행하는 기능으로 소개하지 않습니다.
+원격 명령은 기본적으로 허용하지 않습니다. `pair --commands`로 승인하는 프로그램은
+Linux 계정 권한으로 실행되며, 파일 전송 API의 공유 폴더 제한으로 격리되지 않습니다.
+페어링 화면에서도 이 권한 범위를 안내합니다. 명령별 파일시스템 sandbox는 없습니다.
 
 공식 add-on Release 매니페스트는 SHA-256과 APK에 포함된 Ed25519 공개 키로
 검증합니다. 설치 후 자동으로 외부 훅을 실행하지 않습니다. 일반 apt/pip/npm 패키지는

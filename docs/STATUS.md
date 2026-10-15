@@ -18,6 +18,7 @@ Windows OS도 이 빌드 환경에는 없습니다. APK/EXE 빌드를 실기기 
 | 서버 | Python/Node 템플릿, 작업/로그/SSH loopback 포트 | 호스트 HTTP/Node 실행·중지 테스트; Android 실행 미검증 |
 | 외부 공개 | 명시 --allow-network만 물리 LAN 연결 | 거부/허용 로직 구현; Android LAN 실기기 미검증 |
 | Desktop/XFCE 설치 | apt TUI, 패키지 성공 후 기록, X11/VNC | 기존 Linux host XFCE/Xvfb 실행; Android X11 렌더링 미검증 |
+| Google Chrome | 공식 amd64/ARM64 apt 서명 저장소, 실제 sandbox 실행 검사 | 공식 Release 서명·ARM64 목록 확인; 게스트 실행 CI 별도 기록 |
 | Desktop 오디오 | SSH PCM → Android AudioTrack, 선택형 | Kotlin 빌드; Android 스피커/지연/절전 미검증 |
 | 공식 설치 스크립트 | 실제 BlecaStudio URL + APK 고정 SHA-256 | 출처 URL/파일 일치 확인, 변조는 오류 |
 | 공식 add-on | Release JSON + SHA-256 + Ed25519, 안전한 압축 해제 | 서명/해시/오염/rollback/경로 침범 회귀 테스트 |
@@ -26,9 +27,11 @@ Windows OS도 이 빌드 환경에는 없습니다. APK/EXE 빌드를 실기기 
 | 저장공간/백업 | 실제 용량/캐시, 호스트 safe tar 새 폴더 복원 | 부족 공간/압축 침범 테스트; Android SAF 내보내기 미구현 |
 
 현재 WBS sync는 단방향이며 파일 하나 16 MiB, 원격 명령 15초의 한도가 있습니다.
-화면 공유·Windows 프로그램 Android 직접 실행·Ubuntu snap 자동 구성·Linux ARM64
-Chrome 자동 설치는 제공하지 않습니다. 완전한 Phase 7 실기기 안정화가 끝났다고
+화면 공유·Windows 프로그램 Android 직접 실행·Ubuntu snap 자동 구성은 제공하지 않습니다.
+완전한 Phase 7 실기기 안정화가 끝났다고
 표시하지 않습니다. 기기 검증을 거치기 전 1.0.0은 개발 프리뷰로 배포합니다.
+WBS 원격 명령은 기본 차단이며 승인된 프로그램은 Linux 계정 권한으로 실행합니다.
+파일 전송의 폴더 제한이 원격 프로그램의 파일시스템 sandbox를 제공하지는 않습니다.
 
 이전 0.1.x 문서의 Android 실행 엔진 미포함 설명은 당시 상태입니다.
 현재 사용법·구조·배포판 선택은 [1.0 안내](RUNTIME-1.0.md)를 기준으로 합니다.

@@ -23,7 +23,7 @@ VM bootstrap에 두고 GUI 앱은 DISPLAY=10.0.2.2:1로 접속합니다. 설정 
 보호 메서드 reflection은 제거했으며 API34/35 회귀 테스트를 추가했습니다.
 
 툴바/보조 키/전체화면은 앱마다 저장합니다. 툴바를 숨겨도 설정 복구 버튼을 제공합니다.
-ARM64 Linux Chrome은 공식 호환 패키지가 없어 설치하지 않고 Debian Chromium 또는
+Chrome은 공식 amd64/ARM64 저장소와 샌드박스 실행 검사를 사용합니다. 실패 시 Debian Chromium 또는
 Android Chrome 실행을 선택하게 합니다. --no-sandbox를 사용하지 않습니다.
 오디오는 선택 설치 후 `binux desktop audio start|stop|status`로 제어합니다.
 PulseAudio PCM → 인증된 SSH → Android AudioTrack 경로를 사용합니다.

@@ -327,6 +327,8 @@ def main(argv=None):
         elif action == "pair":
             fp = fingerprint(Path(args.certificate).read_text())
             print("Verify this fingerprint through a trusted channel on BOTH devices: " + fp)
+            if args.commands:
+                print(message("원격 명령은 이 Linux 계정의 파일 접근 권한으로 실행됩니다. 공유 폴더 제한은 파일 전송에만 적용됩니다. 신뢰하는 프로그램만 승인하세요.", "Remote commands run with this Linux account's file access. Share-folder restrictions apply to file transfers. Approve trusted programs only."))
             if not args.approve and input(message("이 기기를 승인합니까? [yes]: ", "Approve this device? [yes]: ")) != "yes":
                 raise ValueError("Pairing not approved")
             roots = dict(value.split("=", 1) for value in args.share)

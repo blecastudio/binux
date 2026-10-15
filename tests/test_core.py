@@ -223,7 +223,7 @@ class PackageTests(Isolated):
         with self.assertRaises(ValueError):
             Addons.validate_url("https://github.com/attacker/repo/releases/download/x/data", "BlecaStudio/test-only")
 
-    def test_arm64_chrome_rejected_without_sandbox_bypass(self):
+    def test_proot_chrome_rejected_without_sandbox_bypass(self):
         compatible, reason = chrome_compatibility("aarch64")
         self.assertFalse(compatible)
         self.assertIn("ARM64", reason)

@@ -19,6 +19,7 @@ Windows ZIP은 전체 폴더를 풀어 .NET10 Desktop Runtime/WebView2와 사용
 **Android/Windows 실기기 실행은 아직 검증하지 않았습니다.** 특히 Android VM/JIT,
 최소화·화면 꺼짐·부팅 재시작·X11 표시·AudioTrack 출력은 기기 검증 대상입니다.
 24시간 실행을 보장하지 않습니다. WBS 파일 한도는 16 MiB, sync는 단방향이며 화면
-공유는 없습니다. Linux Chrome ARM64와 Ubuntu snap은 자동 설치하지 않습니다.
+공유는 없습니다. Chrome은 공식 amd64/ARM64 저장소와 샌드박스 실행 검사 결과에 따라
+설치/기본 브라우저 지정을 처리하며, Ubuntu snap은 자동 구성하지 않습니다.
 
 상세 사용법/검증 범위: docs/RUNTIME-1.0.md, docs/STATUS.md.

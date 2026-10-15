@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Boot an actual ARM64 kernel and test authenticated guest processes over SSH."""
 import argparse,os,pathlib,socket,subprocess,tempfile,time,signal,shutil,re
-p=argparse.ArgumentParser();p.add_argument('distribution',choices=['debian','ubuntu']);p.add_argument('directory');p.add_argument('--qemu',default='qemu-system-aarch64');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('distribution',choices=['debian','ubuntu']);p.add_argument('directory');p.add_argument('--qemu',default='qemu-system-aarch64');p.add_argument('--browser-only',action='store_true');a=p.parse_args()
 directory=pathlib.Path(a.directory).resolve();name=a.distribution
 with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
  work=pathlib.Path(temp);bootstrap=work/'bootstrap';bootstrap.mkdir();home=work/'home';home.mkdir(mode=0o700);state=work/'state';state.mkdir(mode=0o700)
@@ -42,15 +42,16 @@ with tempfile.TemporaryDirectory(prefix='binux-vm-test-') as temp:
    else:raise RuntimeError('Guest SSH authentication failed: '+check.stderr.decode(errors='replace'))
    subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash /run/binux-bootstrap/prepare-guest-session'],check=True,timeout=60)
    checks="set -eu; test $(id -u) -eq "+str(os.getuid())+"; uname -r; . /etc/os-release; test \"$ID\" = "+name+"; python3 -c 'print(\"한국어 Python process\")'; printf shared-home > /home/binux/vm-test.txt; sudo apt-get -o APT::Update::Error-Mode=any update; pkg --help; pkg install -y nodejs npm; node -e 'console.log(\"Node process\")'; binux-pip install flask fastapi uvicorn; python3 -m venv /home/binux/test-project; /home/binux/.venv/bin/python -c 'import flask,fastapi;print(\"pip Python dependencies installed\")'; npm install --prefix /home/binux/test-js express; /usr/bin/python3 /run/binux-bootstrap/runtime-guest-checks.py"
+   if a.browser_only:checks='set -eu; /usr/bin/python3 /run/binux-bootstrap/runtime-guest-checks.py --browser-only'
    import shlex
    subprocess.run([*ssh,'/usr/local/bin/binux-entry /home/binux /bin/bash -ec '+shlex.quote(checks)],check=True,timeout=3600)
-   assert (home/'vm-test.txt').read_text()=='shared-home'
+   if not a.browser_only:assert (home/'vm-test.txt').read_text()=='shared-home'
    assert not (home/'.venv/bin/python').exists(), 'pip environment leaked into the shared home instead of the per-runtime guest disk'
    # A wrong client key must fail even though the correct device was bootstrapped.
    other=work/'other';subprocess.run(['ssh-keygen','-q','-t','ed25519','-N','','-f',str(other)],check=True)
    wrong=ssh.copy();wrong[2]=str(other)
    assert subprocess.run([*wrong,'true'],capture_output=True).returncode!=0
-   print(f'PASS {name}: actual kernel boot, matching UID shared home, pinned SSH host key, rejected unpaired client, Python, Node.js, signed apt update')
+   print(f'PASS {name}: actual kernel boot, pinned SSH, rejected unpaired client, '+('official Chrome installation and sandbox compatibility handling' if a.browser_only else 'matching UID shared home, Python, Node.js, signed apt update, HTTP servers and XFCE'))
   finally:
    process.terminate()
    try:process.wait(timeout=5)
