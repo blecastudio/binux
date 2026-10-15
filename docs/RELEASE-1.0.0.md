@@ -22,4 +22,9 @@ Windows ZIP은 전체 폴더를 풀어 .NET10 Desktop Runtime/WebView2와 사용
 공유는 없습니다. Chrome은 공식 amd64/ARM64 저장소와 샌드박스 실행 검사 결과에 따라
 설치/기본 브라우저 지정을 처리하며, Ubuntu snap은 자동 구성하지 않습니다.
 
-상세 사용법/검증 범위: docs/RUNTIME-1.0.md, docs/STATUS.md.
+Debian/Ubuntu ARM64 VM에서 실제 pkg/apt·pip·npm 설치, Flask/FastAPI/Express HTTP 응답과
+종료, XFCE/xfwm4 실행 검사가 통과했습니다. Google Chrome도 두 배포판에서
+샌드박스를 켠 headless 실행에 통과했습니다. Android 화면 렌더링 검증과는 구분합니다.
+
+[설치·명령어 안내](https://github.com/blecastudio/binux/blob/main/docs/RUNTIME-1.0.md) ·
+[실제 검증 범위](https://github.com/blecastudio/binux/blob/main/docs/STATUS.md)

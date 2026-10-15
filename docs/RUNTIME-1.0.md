@@ -31,6 +31,11 @@ binux shell
 `~/.venv`는 게스트 안에서 배포판별 `/var/lib/binux/python-venv`를 연결합니다.
 Debian/Ubuntu의 서로 다른 Python 버전과 pip 패키지가 섞이지 않으며, 네이티브
 Android 파일 보기에서는 이 게스트 전용 마운트의 내용이 보이지 않습니다.
+npm 다운로드 캐시는 배포판별 `/var/lib/binux/npm-cache`에 저장합니다. 공유 홈의
+프로젝트 파일은 유지하면서 libuv 파일 작업은 `UV_USE_IO_URING=0`으로 구성합니다.
+이 설정은 게스트의 `/etc/environment`에 저장하며 Android 시스템 설정을 변경하지 않습니다.
+프로젝트의 `node_modules`는 공유 홈에 있으므로 배포판/Node 버전을 바꾸면 해당 배포판에서
+다시 설치하세요. 특히 네이티브 Node 확장은 다른 Node ABI와 그대로 호환되지 않습니다.
 
 VM 하나의 기본 RAM은 1024 MiB, 최대 디스크는 10 GiB입니다. 설치기는 다운로드
 캐시와 디스크 확장에 필요한 여유 공간을 확인합니다. 두 배포판은 별도 공간을 씁니다.
@@ -95,7 +100,7 @@ binux desktop update
 binux desktop uninstall
 ```
 
-CLI 체크박스로 파일 관리자·Mousepad·오디오·개발 도구·Chromium·WBS 실행기를
+CLI 체크박스로 Chrome·파일 관리자·Mousepad·오디오·개발 도구·Chromium·WBS 실행기를
 선택합니다. 실제 apt 패키지 설치가 성공한 뒤 설치 기록을 저장합니다.
 Desktop:X11은 자체 APK의 X.Org 서버이며 loopback TCP와 Xauthority를 사용합니다.
 인증 쿠키는 같은 서명 앱 사이에서만 전달하고 공유 홈 밖에 둡니다.
@@ -188,3 +193,8 @@ Windows는 `.NET 10 + WebView2`가 필요하며 `dotnet publish windows -c Relea
 -r win-x64 --self-contained false -o artifacts/windows`로 전체 폴더를 배포합니다.
 WSL 도구 설치는 `binux runtime install debian`, `binux runtime tools`를 사용합니다.
 Windows 툴바/전체화면 복구 단축키는 F10/F11입니다. Windows OS 실행 검증은 대기입니다.
+
+APK에 고정한 [실제 런타임 Release](https://github.com/blecastudio/binux/releases/tag/runtime-8375ca9db2d3)는
+검증 소스 커밋 `8375ca9db2d390f177dc9b360b0e00495653ab62`와 연결됩니다. 매니페스트에는
+캐시된 기본 이미지의 별도 소스 커밋도 기록합니다. 각 배포판의 전체 대응 소스, 패키지
+버전, 부팅 로그와 SHA-256을 같은 Release에서 확인할 수 있습니다.

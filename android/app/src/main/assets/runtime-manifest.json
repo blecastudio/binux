@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "source_commit": "8375ca9db2d390f177dc9b360b0e00495653ab62",
+  "image_source_commits": {
+    "debian": "a498d4070a5d804342e2bb106cf76a1a9522458e",
+    "ubuntu": "a498d4070a5d804342e2bb106cf76a1a9522458e"
+  },
+  "architecture": "aarch64",
+  "disk_bytes": 10737418240,
+  "assets": {
+    "ubuntu-binux-corresponding-source.tar.gz": {
+      "bytes": 39516,
+      "sha256": "1d4892b9b0c6a5b348503bd9af6c56713a77996c3c4456dcc0986d85b71f3f4a",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-binux-corresponding-source.tar.gz"
+    },
+    "debian-packages.tsv": {
+      "bytes": 8526,
+      "sha256": "a52955891faf2cc8248e5b870165249bc381b6dc649a0621235bb7129fff2fab",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-packages.tsv"
+    },
+    "ubuntu-corresponding-sources.tar": {
+      "bytes": 1154437120,
+      "sha256": "7eaf4451fdb3458af93f987fd6ac50c1991cc0f76930621c85df758be9330a46",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-corresponding-sources.tar"
+    },
+    "ubuntu-disk.qcow2": {
+      "bytes": 1068040192,
+      "sha256": "197eb48339012978adee665a6f81b0556c95f65e195479fc6d286d45379c7f38",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-disk.qcow2"
+    },
+    "debian-initrd": {
+      "bytes": 36559530,
+      "sha256": "733fc7be6f5585486373f8c10b22205cdde1f2302af5df27432885e74f70e68e",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-initrd"
+    },
+    "ubuntu-source-packages.txt": {
+      "bytes": 4159,
+      "sha256": "343bb467f881ce245cde74d6eb5c4e4faea302d7b788531f24ae881e220f0925",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-source-packages.txt"
+    },
+    "debian-kernel": {
+      "bytes": 37660608,
+      "sha256": "9c37ace54ef7e1919411fd912e9f34d6982ddd7f4c8ef3c8aee56f4c4d70db67",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-kernel"
+    },
+    "ubuntu-binux-source-commit.txt": {
+      "bytes": 41,
+      "sha256": "5cffa488777dda38cfd5e3526b320382882850156a3e266be03598924f29e84b",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-binux-source-commit.txt"
+    },
+    "ubuntu-boot-test.log": {
+      "bytes": 38832,
+      "sha256": "ef207d2ed11e262058adae7ea5fe5e9dd405380dd7a45a80a7597bc51457b8d5",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-boot-test.log"
+    },
+    "debian-binux-source-commit.txt": {
+      "bytes": 41,
+      "sha256": "5cffa488777dda38cfd5e3526b320382882850156a3e266be03598924f29e84b",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-binux-source-commit.txt"
+    },
+    "debian-disk.qcow2": {
+      "bytes": 307822592,
+      "sha256": "e9e0faae55ab13fe5b150669590a84f19f5f65a2cd5d976c742ebc287751892a",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-disk.qcow2"
+    },
+    "ubuntu-initrd": {
+      "bytes": 63715136,
+      "sha256": "c14673428fc8f7359e153e0699496b8b660bbf1a18464769e5d959ef284c8d79",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-initrd"
+    },
+    "debian-boot-test.log": {
+      "bytes": 40285,
+      "sha256": "f774f0f1175a484690080f6afbebb31aba9c12ec1ed8ee15ea1149f5083b5ac7",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-boot-test.log"
+    },
+    "ubuntu-packages.tsv": {
+      "bytes": 12969,
+      "sha256": "a5f225f199d4bfd37fac65fc1af63d6ee24350e38d4ec850b1ed1c65308a7630",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-packages.tsv"
+    },
+    "debian-source-packages.txt": {
+      "bytes": 2340,
+      "sha256": "03de4b48ffaf3717d51d46c5852364cf2d100ab5231f2d114779ef981017c547",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-source-packages.txt"
+    },
+    "debian-corresponding-sources.tar": {
+      "bytes": 436172800,
+      "sha256": "4819c0f688f2738dfc1f4548650f9aa7ef569f3368884f31c17477a7c68cf624",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-corresponding-sources.tar"
+    },
+    "debian-binux-corresponding-source.tar.gz": {
+      "bytes": 39516,
+      "sha256": "1d4892b9b0c6a5b348503bd9af6c56713a77996c3c4456dcc0986d85b71f3f4a",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/debian-binux-corresponding-source.tar.gz"
+    },
+    "ubuntu-kernel": {
+      "bytes": 18600927,
+      "sha256": "353bab8eeaad9caf931dd85fd7a7bf8800d2669d759c0369ffaba7abc03a7aff",
+      "url": "https://github.com/blecastudio/binux/releases/download/runtime-8375ca9db2d3/ubuntu-kernel"
+    }
+  }
+}

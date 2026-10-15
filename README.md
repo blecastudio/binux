@@ -49,7 +49,7 @@ binux desktop status
 binux desktop stop
 ```
 
-설치기는 파일 관리자·GUI 편집기·오디오·개발 도구·Chromium·WBS 실행기를 선택하는
+설치기는 Chrome·파일 관리자·GUI 편집기·오디오·개발 도구·Chromium·WBS 실행기를 선택하는
 CLI TUI입니다. 실제 apt 설치 성공 후에만 XFCE 설치 기록을 저장합니다.
 공식 스크립트가 APK에서 검토한 SHA-256과 다르면 다운로드를 거부합니다.
 Desktop:X11은 실제 X.Org 서버이며 같은 서명 앱에만 인증 쿠키를 전달합니다.

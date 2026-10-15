@@ -28,7 +28,17 @@ ELF 검사는 ABI/Android 링커/의존 라이브러리/16 KiB 정렬을 검사�
 검사합니다. 실패한 이미지는 설치 가능한 Release로 발행하지 않습니다. 부팅 로그와
 이미지 캐시는 CI에 보존해 실패 원인을 다시 검사할 수 있습니다.
 
-현재 호스트 43개, 앱 10개, X11 설정 2개, 에뮬레이터 138개 테스트가 통과합니다.
+2026-10-15 [통합 실행](https://github.com/blecastudio/binux/actions/runs/38683043024)에서
+APK와 같은 QEMU 9.2.4 소스로 Debian/Ubuntu ARM64를 모두 부팅했습니다.
+두 배포판의 pkg/apt·pip·npm/Express 설치, Flask/FastAPI/Express HTTP 응답과 프로세스
+종료, XFCE/xfwm4·인증된 Xvfb 실행 및 설치기 재실행의 패키지 소유권 유지가 통과했습니다.
+Ubuntu 공유 홈에서 npm의 JSON 파일이 잘리던 회귀는 배포판별 ext4 npm 캐시와
+libuv의 io_uring 비활성화 후 새 설치에서 재현되지 않았습니다. Android 실기기 결과는 아닙니다.
+
+[Chrome 실행](https://github.com/blecastudio/binux/actions/runs/38665106962)도 같은 엔진으로
+두 ARM64 배포판에서 공식 apt 설치와 샌드박스를 켠 headless DOM 검사에 통과했습니다.
+
+현재 호스트 44개, 앱 10개, X11 설정 2개, 에뮬레이터 138개 테스트가 통과합니다.
 PTY 회귀 테스트는 Bash의 SIGTTIN 정지를 실제로 유도한 뒤 전경 소유권 이전과
 SIGCONT로 입력·명령 실행·exit status가 복구되는지 검사합니다.
 

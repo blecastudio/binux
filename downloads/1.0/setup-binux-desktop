@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# binux Desktop installer — BlecaStudio, GPL-3.0-only.
+# Execute only a reviewed copy. This script installs real distribution packages.
+set -euo pipefail
+original_args=("$@")
+lang=${BINUX_LANG:-ko}
+official_source='https://raw.githubusercontent.com/blecastudio/binux/main/setup-binux-desktop'
+say() { if [[ $lang == ko* ]]; then printf '%s\n' "$1"; else printf '%s\n' "$2"; fi; }
+fail() { say "$1" "$2" >&2; exit "${3:-1}"; }
+yes=false; features='files,chrome'; renderer=x11; action=install
+while (($#)); do
+ case $1 in
+  --help|-h) printf 'setup-binux-desktop [--yes] [--features chrome,files,editor,audio,tools,chromium,wbs] [--renderer x11|vnc] [--check]\n'; exit 0;;
+  --yes) yes=true;;
+  --features) (($#>=2)) || exit 2; features=$2; shift;;
+  --renderer) (($#>=2)) || exit 2; renderer=$2; shift;;
+  --check) action=check;;
+  *) fail "알 수 없는 옵션: $1" "Unknown option: $1" 2;;
+ esac; shift
+done
+[[ $renderer == x11 || $renderer == vnc ]] || fail '렌더러는 x11 또는 vnc입니다.' 'Renderer must be x11 or vnc.' 2
+say 'binux Desktop — BlecaStudio 공식 설치기' 'binux Desktop — BlecaStudio installer'
+printf 'Source: %s\n' "$official_source"
+say '출처를 확인한 스크립트만 실행하세요. 선택한 패키지는 이 기기의 저장공간을 사용합니다.' 'Run only reviewed scripts. Selected packages use this device’s storage.'
+# Target 35 native Android cannot execute arbitrary downloaded Linux binaries.
+# Neither a renderer APK nor PRoot by itself removes this restriction.
+if [[ ${BINUX_RUNTIME:-} == native-android ]] || [[ -x /system/bin/getprop && ! -x /usr/bin/apt-get ]]; then
+ if [[ -n ${BINUX_BRIDGE:-} && -x $BINUX_BRIDGE ]]; then
+  say '선택한 Debian/Ubuntu VM에서 실행합니다. 먼저 binux runtime install debian 또는 ubuntu를 실행하세요.' 'Running in the selected Debian/Ubuntu VM. First install one with binux runtime install debian or ubuntu.'
+  exec "$BINUX_BRIDGE" setup-binux-desktop "${original_args[@]}"
+ fi
+ say 'Android Native Bash가 감지되었습니다. X11 화면 서버는 별도 APK로 설치할 수 있습니다.' 'Android Native Bash detected. The X11 display server is available as a separate APK.'
+ say '현재 APK에는 Debian/Ubuntu 실행 엔진이 없습니다. XFCE를 설치한 것으로 표시하지 않습니다.' 'This APK has no Debian/Ubuntu execution engine. XFCE installation is unavailable.'
+ say 'Binux Desktop:X11 APK: https://github.com/blecastudio/binux/releases' 'Binux Desktop:X11 APK: https://github.com/blecastudio/binux/releases'
+ fail '지원되는 Debian/Ubuntu 런타임 안에서 이 스크립트를 다시 실행하세요.' 'Run this installer inside a supported Debian/Ubuntu runtime.' 69
+fi
+[[ -r /etc/os-release ]] || fail '/etc/os-release를 읽을 수 없습니다.' 'Cannot read /etc/os-release.' 69
+# shellcheck disable=SC1091
+source /etc/os-release
+[[ ${ID:-} == debian || ${ID:-} == ubuntu ]] || fail 'Debian 또는 Ubuntu 환경이 필요합니다.' 'Debian or Ubuntu is required.' 69
+for cmd in apt-get dpkg-query dpkg df awk; do command -v "$cmd" >/dev/null || fail "필수 명령 없음: $cmd" "Missing required command: $cmd" 69; done
+arch=$(dpkg --print-architecture)
+say "배포판: $ID / 아키텍처: $arch / 렌더러: $renderer" "Distribution: $ID / architecture: $arch / renderer: $renderer"
+free=$(df -Pk "${HOME:?}" /usr | awk 'NR>1 {if(NR==2 || $4<free)free=$4} END {print free}')
+[[ $free =~ ^[0-9]+$ && $free -ge 2097152 ]] || fail 'Desktop 설치에는 최소 2 GiB의 여유 공간이 필요합니다.' 'Desktop installation needs at least 2 GiB free space.' 73
+[[ $action == check ]] && { say '기본 호환성 검사 통과. 패키지 설치 및 GUI 실행 검증은 아직 수행하지 않았습니다.' 'Basic compatibility passed. Package installation and GUI launch are not yet verified.'; exit 0; }
+if ! $yes; then
+ if [[ -t 0 ]]; then exec 5<&0
+ elif { exec 5</dev/tty; } 2>/dev/null; then :
+ else fail '--yes 없이 실행하려면 대화형 터미널이 필요합니다.' 'An interactive terminal is required without --yes.' 2
+ fi
+ selected=(true false false false false false true)
+ labels=('GUI 파일 관리자 / File manager' 'GUI 코드 편집기 / Code editor' '오디오 / Audio' '개발 도구 / Developer tools' 'Chromium (sandbox preserved)' 'WBS CLI 실행기 / WBS launcher' 'Google Chrome (Google terms; sandbox preserved)')
+ while :; do
+  say '번호를 입력해 선택을 전환하세요. Enter: 진행' 'Toggle options using their numbers. Enter: continue'
+  for i in 0 1 2 3 4 5 6; do mark=' '; ${selected[$i]} && mark=x; printf '%s. [%s] %s\n' "$((i+1))" "$mark" "${labels[$i]}"; done
+  IFS= read -r answer <&5 || exit 1
+  [[ -z $answer ]] && break
+  for n in $answer; do
+   [[ $n =~ ^[1-7]$ ]] || continue
+   i=$((n-1)); if ${selected[$i]}; then selected[$i]=false;else selected[$i]=true;fi
+  done
+ done
+ features='';keys=(files editor audio tools chromium wbs chrome)
+ for i in 0 1 2 3 4 5 6; do if ${selected[$i]}; then features+="${keys[$i]},"; fi; done
+ say 'Chrome은 공식 서명 저장소에서 설치하고 샌드박스를 켠 실제 실행을 검사합니다.' 'Chrome uses its official signed repository and a real launch check with sandboxing enabled.'
+ say '선택한 XFCE 패키지를 설치할까요? yes를 입력하세요.' 'Install the selected XFCE packages? Type yes.'
+ IFS= read -r answer <&5; [[ $answer == yes ]] || fail '설치 취소됨.' 'Installation cancelled.'
+fi
+packages=(xfce4 dbus-x11 xauth x11-utils x11-xserver-utils python3)
+want_chrome=false;browser=none;browser_verified=false
+IFS=, read -r -a requested <<< "$features"
+for feature in "${requested[@]}"; do
+ case $feature in
+  files) packages+=(thunar);; editor) packages+=(mousepad);; audio) packages+=(pulseaudio pulseaudio-utils);;
+  tools) packages+=(git python3 python3-pip nodejs npm curl openssh-client);;
+  chromium) [[ $ID == debian ]] || fail 'Ubuntu의 Chromium 패키지는 snap에 연결되어 있습니다. 이 설치기는 snap 구성을 지원하지 않습니다.' 'Ubuntu Chromium delegates to snap, which is not configured by this installer.' 69; packages+=(chromium);browser=chromium;;
+  ''|none) :;;
+  chrome) want_chrome=true;packages+=(google-chrome-stable);;
+  wbs) [[ ${BINUX_RUNTIME:-} == linux-vm ]] || fail 'WBS 통합에는 binux Linux VM이 필요합니다.' 'WBS integration requires the binux Linux VM.' 69; packages+=(xfce4-terminal);;
+  *) fail "알 수 없는 보조 기능: $feature" "Unknown feature: $feature" 2;;
+ esac
+done
+[[ $renderer == vnc ]] && packages+=(tigervnc-standalone-server tigervnc-tools)
+privilege=()
+if [[ $(id -u) != 0 ]]; then
+ command -v sudo >/dev/null || fail 'apt 설치 권한이 없습니다. 배포판 관리자에게 설치를 요청하세요.' 'apt requires privileges. Ask the distribution administrator to install packages.' 77
+ privilege=(sudo)
+fi
+if $want_chrome;then
+ [[ $arch == amd64 || $arch == arm64 ]] || fail 'Chrome 공식 패키지 대상은 amd64/arm64입니다. Chromium 또는 Android Chrome을 선택하세요.' 'Official Chrome packages target amd64/arm64. Choose Chromium or Android Chrome.' 69
+ [[ $(id -u) != 0 ]] || fail 'Chrome 샌드박스는 비루트 사용자로 실행해야 합니다. binux Linux VM의 binux 계정을 사용하세요.' 'Chrome sandboxing requires a non-root user. Use the binux account in the Linux VM.' 69
+ command -v curl >/dev/null || fail 'Chrome 출처 확인에 curl이 필요합니다.' 'curl is required to verify the Chrome source.' 69
+ chrome_key=$(mktemp)
+ curl -fL --max-time 60 https://dl.google.com/linux/linux_signing_key.pub -o "$chrome_key" || { rm -f "$chrome_key";exit 1; }
+ # Reviewed Google Linux signing authority: EB4C1BFD4F042F6DDDCCEC917721F63BD38B4796.
+ [[ $(sha256sum "$chrome_key" | awk '{print $1}') == 54dea5f6c2a26091578cf52a999cebc6b64df478d37ad4dce96376b711e3b27c ]] || { rm -f "$chrome_key";fail 'Google 공개 키가 검토한 버전과 다릅니다. binux 설치기를 업데이트하세요.' 'Google key differs from the reviewed version. Update the binux installer.' 69; }
+ "${privilege[@]}" install -d -m 755 /etc/apt/keyrings
+ "${privilege[@]}" install -m 644 "$chrome_key" /etc/apt/keyrings/binux-google-chrome.asc
+ rm -f "$chrome_key"
+ printf 'deb [arch=%s signed-by=/etc/apt/keyrings/binux-google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main\n' "$arch" | "${privilege[@]}" tee /etc/apt/sources.list.d/binux-google-chrome.list >/dev/null
+fi
+owned=()
+for package in "${packages[@]}";do
+ [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null || true) == ii* ]] || owned+=("$package")
+done
+# apt verifies distribution package signatures; no unverified curl-to-shell dependency download.
+"${privilege[@]}" apt-get -o APT::Update::Error-Mode=any update
+"${privilege[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
+for package in "${packages[@]}"; do
+ [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null) == ii* ]] || fail "패키지 설치 검증 실패: $package" "Package installation verification failed: $package" 1
+done
+if [[ $browser == chromium ]];then xdg-mime default chromium.desktop text/html x-scheme-handler/http x-scheme-handler/https;fi
+if $want_chrome;then
+ chrome_profile=$(mktemp -d);chrome_output=$(mktemp)
+ if timeout 60 google-chrome --headless --disable-gpu --no-first-run --no-default-browser-check --user-data-dir="$chrome_profile" --dump-dom 'data:text/html,binux-browser-sandbox-probe' >"$chrome_output" 2>&1 && grep -q 'binux-browser-sandbox-probe' "$chrome_output";then
+  browser=google-chrome-stable;browser_verified=true
+  xdg-mime default google-chrome.desktop text/html x-scheme-handler/http x-scheme-handler/https
+  say 'Google Chrome: 샌드박스를 켠 실행 검사 통과, 기본 브라우저로 지정했습니다.' 'Google Chrome: launch passed with sandbox enabled; set as default browser.'
+ else
+  browser=unavailable
+  tail -c 2048 "$chrome_output" >&2
+  say 'Chrome 패키지는 설치됐지만 기본 샌드박스로 실행하지 못했습니다. 1) 설치기를 --features chromium으로 다시 실행 (Debian), 2) binux desktop browser URL로 Android Chrome 사용을 선택하세요.' 'Chrome packages installed, but launch with the default sandbox failed. Choose 1) rerun the installer with --features chromium (Debian), or 2) binux desktop browser URL for Android Chrome.'
+ fi
+ rm -rf -- "$chrome_profile";rm -f -- "$chrome_output"
+fi
+state_dir="${BINUX_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/binux}/desktop"
+mkdir -p "$state_dir"
+# Installation records are written only after all requested packages are verified installed.
+printf 'renderer=%s\narchitecture=%s\nfeatures=%s\n' "$renderer" "$arch" "$features" > "$state_dir/installed.txt"
+mkdir -p "${state_dir%/desktop}/config"
+python3 - "${state_dir%/desktop}/config/desktop.json" "$ID" "$renderer" "$features" "$browser" "$browser_verified" "${#owned[@]}" "${owned[@]}" -- "${packages[@]}" <<'RECORD'
+import json,sys,os,tempfile
+path,distro,renderer,features,browser,browser_verified,count,*packages=sys.argv[1:]
+n=int(count);owned=packages[:n];all_packages=packages[n+1:]
+data={'installed':True,'runtime':distro,'renderer':renderer,'features':features.split(','),'owned_packages':owned,'packages':all_packages,'verified_gui_launch':False,'browser':browser,'browser_sandbox_verified':browser_verified=='true'}
+if os.path.exists(path):
+ with open(path) as previous_file:previous=json.load(previous_file)
+ # Re-running the official URL must retain ownership from earlier installs,
+ # including optional packages that are still present on this device.
+ if previous.get('installed'):
+  for field in ('features','owned_packages','packages'):
+   data[field]=sorted(set(previous.get(field,[]))|set(data[field]))
+  if browser=='none':
+   for field in ('browser','browser_sandbox_verified'):data[field]=previous.get(field,data[field])
+fd,tmp=tempfile.mkstemp(dir=os.path.dirname(path))
+with os.fdopen(fd,'w') as f:json.dump(data,f);f.flush();os.fsync(f.fileno())
+os.replace(tmp,path)
+RECORD
+cat > "$state_dir/start-x11" <<'START'
+#!/usr/bin/env bash
+set -euo pipefail
+: "${DISPLAY:?Set DISPLAY to a running, authorized X11 display first.}"
+xdpyinfo >/dev/null
+unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS
+exec dbus-run-session -- xfce4-session
+START
+chmod 700 "$state_dir/start-x11"
+if [[ ,$features, == *,wbs,* ]];then
+ mkdir -p "$HOME/Desktop"
+ cat > "$HOME/Desktop/binux-wbs.desktop" <<'WBS'
+[Desktop Entry]
+Type=Application
+Name=Windows Binux Share
+Exec=xfce4-terminal --hold -e "wbs help"
+Icon=network-workgroup
+Terminal=false
+WBS
+ chmod 700 "$HOME/Desktop/binux-wbs.desktop"
+fi
+say 'XFCE 패키지 설치가 완료되었습니다. GUI 실행은 별도 단계입니다.' 'XFCE packages installed. Starting the GUI is a separate step.'
+printf 'X11: DISPLAY=:1 %q\n' "$state_dir/start-x11"
+if [[ $renderer == vnc ]]; then
+ say 'VNC: vncpasswd로 비밀번호를 설정하고 localhost에서만 시작하세요.' 'VNC: set a password with vncpasswd and start on localhost only.'
+ printf 'tigervncserver :1 -localhost yes -SecurityTypes VncAuth\n'
+fi

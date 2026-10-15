@@ -1,5 +1,3 @@
-> 1.0.0 현재 구현·명령·검증 범위는 [1.0 안내](RUNTIME-1.0.md) 및 [상태표](STATUS.md)를 우선 확인하세요. 아래의 0.1.x 제한 설명은 초기 구현 당시의 기록입니다.
-
 # 3. 프로젝트 구조
 
 ```text
@@ -7,14 +5,19 @@ binux/
   android/                  Gradle wrapper, Compose Android app
     app/src/main/           Kotlin/Java, Manifest, 언어 리소스, Bash rc
     app/src/androidTest/    ARM64 실기기용 테스트
+    app/src/test/           API34/35 IME 회귀, 셸 인자, SSH host key 검사
+    desktop-x11/           별도 X.Org APK, 설정 UI와 API34/35 회귀 검사
   native/                   JNI 프로세스 제어, binuxctl, setsid launcher
   core/binux/               Linux/WSL CLI와 supervisor, runtime, packages, WBS, Desktop
   windows/                  WinForms, ConPTY, WebView2, local xterm assets
-  third_party/              Termux 소스, Bash 및 xterm 전체 소스 압축본/라이선스
+  runtime/                  게스트 초기화/세션 준비, 서명 키링, add-on 소스
+  third_party/              Bash/QEMU/GLib/X.Org/Termux/xterm 소스·패치·라이선스
   tests/                    호스트 통합 및 보안 테스트
-  scripts/                  Bash 교차 빌드, APK 검사, 테스트, add-on 설치 진입점
+  scripts/                  Bash/VM 교차 빌드, 이미지 생성/부팅 검사, 서명/해시 검사
+  setup-binux-desktop       검토한 공식 XFCE 설치 스크립트
+  downloads/1.0/            APK/Windows ZIP/서명 add-on 및 SHA256SUMS
   docs/                     20개 산출물 및 실제 지원 범위
-  .github/workflows/        빌드/테스트 workflow (게시 없음)
+  .github/workflows/        빌드/테스트, 런타임 이미지/Chrome 검증, Release 발행
   artifacts/                로컬 빌드 결과/로그 (git에서 제외)
 ```
 

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "packages": [
+    {
+      "name": "desktop",
+      "version": "1.0.0",
+      "sha256": "9967e4c683b827d8d6c277e791491e3a4d2487b9342afc6eb245722e99504016",
+      "url": "https://github.com/blecastudio/binux/releases/download/v1.0.0/desktop-1.0.0.tar.gz",
+      "platform": "linux",
+      "arch": "any",
+      "dependencies": [],
+      "signature": "1ao8LKty+GOntmV22bo/SPdTzC1PRD0kYqm3Vj+Ce8aRX/5nS3RgAcULIb50YgeInWrQRvV0aiuALWA4JrgWBQ=="
+    },
+    {
+      "name": "developer-tools",
+      "version": "1.0.0",
+      "sha256": "7a14e4c5bc255779657e2ce396685e5945afd1c19d2d737e21164599eaf2a9c1",
+      "url": "https://github.com/blecastudio/binux/releases/download/v1.0.0/developer-tools-1.0.0.tar.gz",
+      "platform": "linux",
+      "arch": "any",
+      "dependencies": [],
+      "signature": "S7XpXhWwQ8OvQ3aq7lz5ApcQywhE9ilCZ1EML63aMLFUAiI70NxBHA1DmzJlGkmcCdIaYQy2joGRA7tZ/o8vAg=="
+    },
+    {
+      "name": "wbs",
+      "version": "1.0.0",
+      "sha256": "9990f3009454ce2a7bba09ee8eb90ee0e8cc451bd63d35f96801c673eccb183f",
+      "url": "https://github.com/blecastudio/binux/releases/download/v1.0.0/wbs-1.0.0.tar.gz",
+      "platform": "linux",
+      "arch": "any",
+      "dependencies": [],
+      "signature": "trnlJFQ9Clp5uAcLQAgQaciF8g+hdo6wJeBDdrr6n6nzNzb6W6dlsRzA0GwBfPVYS4R0641sVcijI0ks03K7Bw=="
+    }
+  ]
+}
